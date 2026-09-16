@@ -2,7 +2,7 @@
 .globl	_main
 
 .area _HEADER (ABS)
-.org 	0x4000
+.org 	0x8000
   jp	init
 
 init:

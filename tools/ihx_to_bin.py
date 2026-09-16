@@ -13,7 +13,7 @@ SECTOR_ORDERING = [0, 5, 1, 6, 2, 7, 3, 8, 4]
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("ihx_to_bin.py", description="Convert an Intel HEX output compiled file to an Amstrad BIN file")
     parser.add_argument("input")
-    parser.add_argument("-l", "--location", default="0x4000")
+    parser.add_argument("-l", "--location", default="0x8000")
     parser.add_argument("-o", "--output", required=True)
 
     args = parser.parse_args()
