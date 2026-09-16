@@ -8,6 +8,7 @@ EMULATOR=/opt/AceDL/AceDL
 
 ASM_OBJS= \
 	build/crt0.s.rel \
+	build/sprite_assets.s.rel \
 	build/putchar.s.rel
 
 C_OBJS= \
@@ -15,13 +16,20 @@ C_OBJS= \
 
 BACKGROUND_OBJ=build/background.scr
 
-ARTWORKS_OBJS= \
-	build/background.scr
+SPRITE_ASSETS= \
+	artworks/robot.png \
+	artworks/element_jeu_bidon.png
 
 all: build/$(PGM_NAME).dsk build/$(PGM_NAME).cdt
 
 build/%.scr: artworks/%.png
 	python tools/png_to_background_bin.py -o $@ $<
+
+build/sprite_assets.s: $(SPRITE_ASSETS)
+	python tools/generate_sprite_assets.py $^
+
+build/sprite_assets.s.rel: build/sprite_assets.s
+	$(ASM) -o $@ $<
 
 build/%.s.rel: src/%.s
 	$(ASM) -o $@ $<

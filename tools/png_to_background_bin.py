@@ -20,7 +20,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     img = Image.open(args.input)
-    pixel_values = list(img.getdata())
+    pixel_values = list(img.get_flattened_data())
     
     lines = []
     while len(pixel_values) > 0:
