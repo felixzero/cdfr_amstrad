@@ -1,17 +1,17 @@
 .module crt0
 .globl	_main
 
-.area _HEADER (ABS)
-.org 	0x8000
-  jp	init
-
-init:
+.area _CODE
   call gsinit
-	call _main
-	jp _exit
+  di
 
-	.area	_HOME
-	.area	_CODE
+  ; Set mode 0
+  ld bc, #0x7F8C
+  out (c), c
+
+  call _main
+  jp _exit
+
   .area _GSINIT
   .area _GSFINAL
         

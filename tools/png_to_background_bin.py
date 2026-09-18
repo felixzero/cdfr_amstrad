@@ -6,10 +6,12 @@ IMG_WIDTH = 160
 IMG_HEIGHT = 200
 LINE_INTERLEAF = 8
 
+def bit(x: int, n: int, shift: int) -> bool:
+    return (1 << shift) if bool(x & (1 << n)) else 0
+
 def interleaf(p1: int, p2: int) -> int:
     return (
-        (p1 & 0b1000) << 4 | (p1 & 0b0100) << 3 | (p1 & 0b0010) << 2 | (p1 & 0b0001) << 1 |
-        (p2 & 0b1000) << 3 | (p2 & 0b0100) << 2 | (p2 & 0b0010) << 1 | (p2 & 0b0001) << 0
+        bit(p1, 0, 7) | bit(p2, 0, 6) | bit(p1, 2, 5) | bit(p2, 2, 4) | bit(p1, 1, 3) | bit(p2, 1, 2) | bit(p1, 3, 1) | bit(p2, 3, 0)
     )
 
 if __name__ == "__main__":
