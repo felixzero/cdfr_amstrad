@@ -2,6 +2,11 @@
 
 #include <stdint.h>
 
+struct point {
+    uint8_t x;
+    uint8_t y;
+};
+
 struct rect {
     uint8_t x;
     uint8_t y;

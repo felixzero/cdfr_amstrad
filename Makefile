@@ -13,7 +13,8 @@ ASM_OBJS= \
 	build/graphics.s.rel
 
 C_OBJS= \
-	build/main.c.rel
+	build/main.c.rel \
+	build/sprites.c.rel
 
 BACKGROUND_OBJ=build/background.scr
 

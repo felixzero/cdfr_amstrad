@@ -1,12 +1,10 @@
 #include <string.h>
 
 #include "graphics.h"
+#include "sprites.h"
 
 extern uint8_t element_jeu_bidon[];
 extern uint8_t robot[];
-
-struct rect r;
-struct rect r_robot;
 
 main()
 {
@@ -14,95 +12,54 @@ main()
     memcpy((void*)0xC000, (void*)0x4000, 0x4000);
     swap_buffers();
 
-    r_robot.x = 0;
-    r_robot.y = 80;
-    r_robot.w = 16;
-    r_robot.h = 32;
+    struct rect r;
 
-    r.x = 0;
-    r.y = 10;
+    r.x = 10;
+    r.y = 80;
+    r.w = 16;
+    r.h = 32;
+
+    sprite_handle_t robot_sprite = create_sprite(robot, &r);
+
+    sprite_handle_t bidon_sprites[16];
     r.w = 8;
     r.h = 8;
-
     r.y = 10;
-    for (uint8_t x = 0; x < 152; x += 8) {
-        r.x = x;
-        blit_sprite_xor(element_jeu_bidon, &r);
+    for (uint8_t i = 0; i < 16; ++i) {
+        r.x = 8 * i;
+        bidon_sprites[i] = create_sprite(element_jeu_bidon, &r);
     }
-    blit_sprite_xor(robot, &r_robot);
-    swap_buffers();
-    r.y = 20;
-    for (uint8_t x = 0; x < 152; x += 8) {
-        r.x = x;
-        blit_sprite_xor(element_jeu_bidon, &r);
-    }
-    r_robot.x = 2;
-    blit_sprite_xor(robot, &r_robot);
-    swap_buffers();
-    r_robot.x = 4;
 
-    r.y = 30;
+    initialize_all_sprites();
 
+    struct point p = {
+        .x = 10,
+        .y = 80,
+    };
+    struct point q = {
+        .x = 0,
+        .y = 10,
+    };
+    uint8_t current_moving_bidon = 0;
     while (1) {
-        if (r.y == 10) {
-            r.y = 170;
-            for (uint8_t x = 0; x < 152; x += 8) {
-                r.x = x;
-                blit_sprite_xor(element_jeu_bidon, &r);
-            }
-            r.y = 10;
-        } else if (r.y == 20) {
-            r.y = 180;
-            for (uint8_t x = 0; x < 152; x += 8) {
-                r.x = x;
-                blit_sprite_xor(element_jeu_bidon, &r);
-            }
-            r.y = 20;
-        } else {
-            r.y -= 20;
-            for (uint8_t x = 0; x < 152; x += 8) {
-                r.x = x;
-                blit_sprite_xor(element_jeu_bidon, &r);
-            }
-            r.y += 20;
+        p.x += 2;
+        if (p.x >= 150) {
+            p.x = 10;
         }
+        move_sprite(robot_sprite, &p);
 
-        if (r_robot.x == 0) {
-            r_robot.x = 116;
-            blit_sprite_xor(robot, &r_robot);
-            r_robot.x = 0;
-        } else if (r_robot.x == 2) {
-            r_robot.x = 118;
-            blit_sprite_xor(robot, &r_robot);
-            r_robot.x = 2;
-        } else {
-            r_robot.x -= 4;
-            blit_sprite_xor(robot, &r_robot);
-            r_robot.x += 4;
+        q.y += 2;
+        if (q.y >= 190) {
+            q.y = 10;
+            current_moving_bidon++;
+            current_moving_bidon %= 16;
+            q.x = current_moving_bidon * 8;
         }
+        move_sprite(bidon_sprites[current_moving_bidon], &q);
 
-        for (uint8_t x = 0; x < 152; x += 8) {
-            r.x = x;
-            blit_sprite_xor(element_jeu_bidon, &r);
-        }
-
-        blit_sprite_xor(robot, &r_robot);
+        update_sprites();
 
         wait_for_vsync();
         swap_buffers();
-
-        r.y += 10;
-        if (r.y == 190) {
-            r.y = 10;
-        }
-
-
-        r_robot.x += 2;
-        if (r_robot.x >= 120) {
-            r_robot.x = 0;
-        }
     }
-
-
-    while(1) {};
 }
