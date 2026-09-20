@@ -1,8 +1,9 @@
 PGM_NAME=cdfr
 
 ASM=sdasz80
+ASMFLAGS=
 CC=sdcc
-CCFLAGS=-mz80
+CCFLAGS=-mz80 --Werror
 LDFLAGS=-mz80 --code-loc 0x8000 --data-loc 0xA000 --no-std-crt0
 EMULATOR=/opt/AceDL/AceDL
 
@@ -20,7 +21,13 @@ BACKGROUND_OBJ=build/background.scr
 
 SPRITE_ASSETS= \
 	artworks/robot.png \
-	artworks/element_jeu_bidon.png
+	artworks/block_1e.png \
+	artworks/block_2e.png \
+	artworks/block_3e.png \
+	artworks/block_1s.png \
+	artworks/block_2s.png \
+	artworks/block_3s.png \
+	artworks/robot_1.png \
 
 all: dist/$(PGM_NAME).dsk dist/$(PGM_NAME).cdt
 
@@ -31,10 +38,10 @@ build/sprite_assets.s: $(SPRITE_ASSETS)
 	python tools/generate_sprite_assets.py $^
 
 build/sprite_assets.s.rel: build/sprite_assets.s
-	$(ASM) -o $@ $<
+	$(ASM) $(ASMFLAGS) -o $@ $<
 
 build/%.s.rel: src/%.s
-	$(ASM) -o $@ $<
+	$(ASM) $(ASMFLAGS) -o $@ $<
 
 build/%.c.rel: src/%.c
 	$(CC) $(CCFLAGS) -c $< -o $@

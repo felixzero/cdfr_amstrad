@@ -3,62 +3,91 @@
 #include "graphics.h"
 #include "sprites.h"
 
-extern uint8_t element_jeu_bidon[];
-extern uint8_t robot[];
+extern uint8_t robot_1[];
+
+extern uint8_t block_1e[], block_2e[], block_3e[], block_3s[];
 
 main()
 {
+    set_palette(0, AMS_COLOR_MAGENTA);
+    set_palette(1, AMS_COLOR_BLACK);
+    set_palette(2, AMS_COLOR_MARINE);
+    set_palette(3, AMS_COLOR_BLUE);
+    set_palette(4, AMS_COLOR_DARK_RED);
+    set_palette(5, AMS_COLOR_RED);
+    set_palette(6, AMS_COLOR_DGREEN);
+    set_palette(7, AMS_COLOR_DODGER);
+    set_palette(8, AMS_COLOR_OLIVE);
+    set_palette(9, AMS_COLOR_GREY);
+    set_palette(10, AMS_COLOR_ORANGE);
+    set_palette(11, AMS_COLOR_PINK);
+    set_palette(12, AMS_COLOR_SKY);
+    set_palette(13, AMS_COLOR_YELLOW);
+    set_palette(14, AMS_COLOR_LYELLOW);
+    set_palette(15, AMS_COLOR_WHITE);
+
+
     // Copy background to video ram
     memcpy((void*)0xC000, (void*)0x4000, 0x4000);
     swap_buffers();
 
-    struct rect r;
+    struct rect r = {
+        .x = 0,
+        .y = 0,
+        .w = 12,
+        .h = 26
+    };
+    sprite_handle_t robot_sprite = create_sprite(robot_1, &r);
 
-    r.x = 10;
-    r.y = 80;
-    r.w = 16;
-    r.h = 32;
+    struct rect r2 = {
+        .x = 90,
+        .y = 44,
+        .w = 14,
+        .h = 23
+    };
+    create_sprite(block_3e, &r2);
 
-    sprite_handle_t robot_sprite = create_sprite(robot, &r);
+    struct rect r3 = {
+        .x = 116,
+        .y = 74,
+        .w = 14,
+        .h = 19
+    };
+    create_sprite(block_2e, &r3);
 
-    sprite_handle_t bidon_sprites[16];
-    r.w = 8;
-    r.h = 8;
-    r.y = 10;
-    for (uint8_t i = 0; i < 16; ++i) {
-        r.x = 8 * i;
-        bidon_sprites[i] = create_sprite(element_jeu_bidon, &r);
-    }
+    struct rect r4 = {
+        .x = 138,
+        .y = 100,
+        .w = 14,
+        .h = 15
+    };
+    create_sprite(block_1e, &r4);
+
+    struct rect r5 = {
+        .x = 50,
+        .y = 65,
+        .w = 14,
+        .h = 23
+    };
+    create_sprite(block_3s, &r5);
 
     initialize_all_sprites();
 
-    struct point p = {
-        .x = 10,
-        .y = 80,
-    };
-    struct point q = {
+    struct point s = {
         .x = 0,
-        .y = 10,
+        .y = 0,
     };
-    uint8_t current_moving_bidon = 0;
-    while (1) {
-        p.x += 2;
-        if (p.x >= 150) {
-            p.x = 10;
-        }
-        move_sprite(robot_sprite, &p);
 
-        q.y += 2;
-        if (q.y >= 190) {
-            q.y = 10;
-            current_moving_bidon++;
-            current_moving_bidon %= 16;
-            q.x = current_moving_bidon * 8;
+    while (1) {
+        s.x++;
+        s.y++;
+        if (s.x > 150) {
+            s.x = 0;
+            s.y = 0;
         }
-        move_sprite(bidon_sprites[current_moving_bidon], &q);
+        move_sprite(robot_sprite, &s);
 
         update_sprites();
-
         wait_for_vsync();
         swap_buffers();
     }

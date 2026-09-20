@@ -1,6 +1,9 @@
-.globl _blit_sprite_xor
-.globl _swap_buffers
 .globl _wait_for_vsync
+.globl _swap_buffers
+.globl _set_palette
+.globl _blit_sprite_xor
+.globl _blit_sprite_swap
+.globl _get_current_buffer
 
 .area _CODE
 
@@ -9,22 +12,36 @@ RECT_Y = 1
 RECT_W = 2
 RECT_H = 3
 
+CRTC_REG_SCROLL = 0xBC0C
+VSYNC_IN = 0xF5
 
+BUFFER_C000 = 0x30
+BUFFER_4000 = 0x10
+BUFFER_SWAP_XOR_MASK = 0x20
+
+; Block execution until the beginning of VSync
+; Args: -
+; Ret: -
+; Modifies: AF, BC
 _wait_for_vsync:
-    ld b, #0xF5
-wait_loop:
+    ld b, #VSYNC_IN
+wait_loop$:
     in a, (c)
     rra
-    jr NC, wait_loop
+    jr NC, wait_loop$
     ret
 
 
+; Swap the currently displayed buffer with the work buffer
+; Args: -
+; Ret: -
+; Modifies: AF, BC
 _swap_buffers:
     ; Set screen high address
-    ld bc, #0xBC0C
+    ld bc, #CRTC_REG_SCROLL
     out (c), c
     ld a, (#current_buffer)
-    xor a, #0x20
+    xor a, #BUFFER_SWAP_XOR_MASK
     ld (#current_buffer), a
     inc b
     out (c), a
@@ -32,39 +49,123 @@ _swap_buffers:
     ret
 
 
-; void blit_sprite_xor(const uint8_t *sprite, const struct rect *position);
-; arg: HL = sprite, DE = position
-_blit_sprite_xor:
-    push de
-    pop iy
+; Pick an indexed color as a palette element
+; Args: A = index, L = color
+; Ret: -
+_set_palette:
+    ld b, #0x7F
+    ld c, a
+    out (c), c
 
-    ld b, RECT_H(iy)
-.loop_lines:
-    ld a, RECT_Y(iy)
-    add b
-    call address_of_position
-
-    ; Copy line
-    ld c, RECT_W(iy)
-    sra c
-    xor a
-.loop_columns:
-    ld a, (de)
-    xor a, (hl)
-    ld (de), a
-    inc hl
-    inc de
-    dec c
-    jr NZ, .loop_columns
-
-    dec b
-    jr NZ, .loop_lines
+    ld c, l
+    out (c), c
 
     ret
 
 
-; In : Y in A
+; Blit a sprite onto the work buffer, using a simple XOR strategy
+; Args: HL = address to sprite data, DE = rect structure with the destination position
+; Ret: -
+; Modifies: AF, BC, DE, HL, IY
+_blit_sprite_xor:
+    ; IY := rect
+    push de
+    pop iy
+
+    ; FOR B = rect.h to 1 (loop over columns)
+    ld b, RECT_H(iy)
+loop_lines$0:
+    ; A := rect.y + b - 1
+    ld a, RECT_Y(iy)
+    add b
+    dec a
+    ; DE is set to the screen destination address
+    call address_of_position
+
+    ; FOR C = rect.w to 1 (loop over lines)
+    ld c, RECT_W(iy)
+    srl c
+    xor a
+loop_columns$0:
+    ; *DE := *DE ^ *HL
+    ld a, (de)
+    xor a, (hl)
+    ld (de), a
+    ; HL++; DE++; C--
+    inc hl
+    inc de
+    dec c
+    jr NZ, loop_columns$0
+
+    ; ENDFOR (loop over columns)
+    dec b
+    jr NZ, loop_lines$0
+
+    ret
+
+
+; Blit a sprite onto the work buffer, exchanging the content of the assets with a backup of the screen
+; Args: HL = address to sprite data, DE = rect structure with the destination position
+; Ret: -
+; Modifies: AF, BC, DE, HL, IY
+_blit_sprite_swap:
+    ; IY := rect
+    push de
+    pop iy
+
+    ; FOR B = rect.h to 1 (loop over columns)
+    ld b, RECT_H(iy)
+loop_lines$1:
+    ; A := rect.y + b - 1
+    ld a, RECT_Y(iy)
+    add b
+    dec a
+    ; DE is set to the screen destination address
+    call address_of_position
+
+    ld c, RECT_W(iy)
+    srl c
+
+loop_columns$1:
+    ; HL = sprite, DE = screen; perform swap
+    ld a, (hl)
+    cp a, #0
+    jr Z, skip_trans$
+    push af
+    ld a, (de)
+    ld (hl), a
+    pop af
+    ld (de), a
+skip_trans$:
+    inc hl
+    inc de
+    dec c
+    jr NZ, loop_columns$1
+
+    ; ENDFOR (loop over columns)
+    dec b
+    jr NZ, loop_lines$1
+
+    ret
+
+
+; Returns 1 if the current buffer is in 0xC000, 0 if 0x4000
+; Args: -
+; Ret: 1 or O (in A)
+; Modifies: AF
+_get_current_buffer:
+    ld a, (#current_buffer)
+    and #BUFFER_SWAP_XOR_MASK
+    jr Z, ret$
+    ld a, #1
+ret$:
+    ret
+
+
+; Returns the address in the work buffer of the point at coordinate (rect.x, rect.y + A)
+; Args: A = Y offset
 ; Ret: DE = address
+; Modifies: AF, DE
 address_of_position:
     push hl
 
@@ -74,9 +175,9 @@ address_of_position:
     ld d, (hl)
     ld a, (#current_buffer)
     bit 5, a
-    jr NZ, skip
+    jr NZ, skip$
     set 7, d
-skip:
+skip$:
 
     ; Read low byte
     ld h, #(screen_lookup_table_l >> 8)
@@ -86,9 +187,9 @@ skip:
     ld a, RECT_X(iy)
     srl a
     add a, (hl)
-    jr NC, skip_carry
+    jr NC, skip_carry$
     inc d
-skip_carry:
+skip_carry$:
     ld e, a
 
     pop hl
@@ -96,8 +197,7 @@ skip_carry:
 
 .area _DATA
 current_buffer:
-    .db 0x30
-
+    .db BUFFER_C000
 
 .area _LOOKUP_TABLE (ABS)
 .org 0x9000

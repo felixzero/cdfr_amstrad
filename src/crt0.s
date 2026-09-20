@@ -9,6 +9,12 @@
   ld bc, #0x7F8C
   out (c), c
 
+  ; Set black border
+  ld bc, #0x7F14
+  out (c), c
+  ld bc, #0x7f54
+  out (c), c
+
   call _main
   jp _exit
 
