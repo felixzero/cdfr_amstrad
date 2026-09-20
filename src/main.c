@@ -2,8 +2,9 @@
 
 #include "graphics.h"
 #include "sprites.h"
+#include "inputs.h"
 
-extern uint8_t robot_1[];
+extern uint8_t robot_1s[], robot_1n[];
 
 extern uint8_t block_1e[], block_2e[], block_3e[], block_3s[];
 
@@ -37,7 +38,7 @@ main()
         .w = 12,
         .h = 26
     };
-    sprite_handle_t robot_sprite = create_sprite(robot_1, &r);
+    sprite_handle_t robot_sprite = create_sprite(robot_1s, &r);
 
     struct rect r2 = {
         .x = 90,
@@ -73,21 +74,48 @@ main()
 
     initialize_all_sprites();
 
+    set_sprite_z_index(robot_sprite, 200);
+
     struct point s = {
         .x = 0,
         .y = 0,
     };
 
     while (1) {
-        s.x++;
-        s.y++;
-        if (s.x > 150) {
-            s.x = 0;
-            s.y = 0;
+        uint32_t keys = get_keypress();
+        if (!(keys & KEY_D)) {
+            s.x += 2;
+            if (s.x > 150) {
+                s.x = 150;
+            }
         }
+        if (!(keys & KEY_Q)) {
+            s.x -= 2;
+            if (s.x == 0xFE) {
+                s.x = 0;
+            }
+        }
+        if (!(keys & KEY_S)) {
+            s.y += 2;
+            if (s.y > 160) {
+                s.y = 160;
+            }
+        }
+        if (!(keys & KEY_Z)) {
+            s.y -= 2;
+            if (s.y == 0xFE) {
+                s.y = 0;
+            }
+            
+        }
+
         move_sprite(robot_sprite, &s);
 
-        update_sprites();
+        clear_sprites();
+        /*if (!(keys & KEY_Z)) {
+            change_sprite_asset(robot_sprite, robot_1n);
+        }*/
+        draw_sprites();
         wait_for_vsync();
         swap_buffers();
     }

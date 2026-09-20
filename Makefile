@@ -11,7 +11,8 @@ ASM_OBJS= \
 	build/crt0.s.rel \
 	build/sprite_assets.s.rel \
 	build/putchar.s.rel \
-	build/graphics.s.rel
+	build/graphics.s.rel \
+	build/inputs.s.rel
 
 C_OBJS= \
 	build/main.c.rel \
@@ -20,14 +21,20 @@ C_OBJS= \
 BACKGROUND_OBJ=build/background.scr
 
 SPRITE_ASSETS= \
-	artworks/robot.png \
 	artworks/block_1e.png \
 	artworks/block_2e.png \
 	artworks/block_3e.png \
 	artworks/block_1s.png \
 	artworks/block_2s.png \
 	artworks/block_3s.png \
-	artworks/robot_1.png \
+	artworks/robot_1n.png \
+	artworks/robot_1s.png \
+	artworks/robot_1w.png \
+	artworks/robot_2e.png \
+	artworks/robot_2n.png \
+	artworks/robot_2s.png \
+	artworks/robot_2w.png \
+	artworks/robot_2e.png
 
 all: dist/$(PGM_NAME).dsk dist/$(PGM_NAME).cdt
 
