@@ -33,7 +33,7 @@ if __name__ == "__main__":
         for sprite_name in sprite_data:
             f.write(f".globl _{sprite_name}\n")
         f.write("\n")
-        f.write(".area _DATA\n")
+        f.write(".area _INITIALIZED\n")
         for sprite_name, pixels in sprite_data.items():
             f.write(f"_{sprite_name}:\n")
             for line in pixels:

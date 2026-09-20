@@ -48,8 +48,6 @@ class DiskManager:
             "<B8s3s3xB",
             extent, enc_filename, enc_file_extension, math.ceil(data_length / 128)
         )
-        print(data_length)
-        print(math.ceil(data_length / SECTOR_SIZE_BYTES / 2))
         for i in range(math.ceil(data_length / SECTOR_SIZE_BYTES / 2)):
             entry += struct.pack("B", self._free_sector + i)
         self._free_sector += i + 1

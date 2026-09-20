@@ -24,8 +24,16 @@ if __name__ == "__main__":
             if line[0] != ":":
                 continue
             size = int(line[1:3], base=16)
-            start_addr = int(line[3:7], base=16) - int(args.location, base=16)
+            abs_start_addr = int(line[3:7], base=16)
+            start_addr = abs_start_addr - int(args.location, base=16)
             data = bytes.fromhex(line[9:-3])
+            
+            if abs_start_addr == 0:
+                continue
+            
+            if start_addr < 0:
+                print("Error: segment outside of range: 0x%x" % abs_start_addr)
+                exit(1)
             
             if len(raw_binary_data) < start_addr + size:
                 raw_binary_data += bytes.fromhex("00") * (start_addr + size - len(raw_binary_data))

@@ -195,12 +195,11 @@ skip_carry$:
     pop hl
     ret
 
-.area _DATA
+.area _INITIALIZED
 current_buffer:
     .db BUFFER_C000
 
-.area _LOOKUP_TABLE (ABS)
-.org 0x9000
+.area _LOOKUP_TABLE
 ; L = [hex((80 * (y // 8) + (y % 8) * 0x800) >> 8 + 0x40) for y in range(256)]
 ; for x in range(256 // 8):
 ;    print(".db", ", ".join(L[8 * x: 8 * (x + 1)]))

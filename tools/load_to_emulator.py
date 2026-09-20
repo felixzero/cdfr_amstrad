@@ -13,7 +13,6 @@ def query_server(query: dict) -> dict:
         s.connect((HOST, PORT))
         s.sendall(json.dumps(query).encode("ascii"))
         data = s.recv(16 * 1024).decode("ascii")
-        print(data)
         return json.loads(data)
 
 def write_block(code: bytes, starting_addr: int):
