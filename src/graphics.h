@@ -1,21 +1,8 @@
 #pragma once
 
 #include <stdint.h>
-
-// (0, 0) is the top left corner of the screen
-struct point {
-    uint8_t x;
-    uint8_t y;
-};
-
-// (x, y) defines the top-left corner of the rectangle
-// (w, h) its dimension
-struct rect {
-    uint8_t x;
-    uint8_t y;
-    uint8_t w;
-    uint8_t h;
-};
+#include <stdbool.h>
+#include "rect.h"
 
 // Block execution until the beginning of VSync
 void swap_buffers(void);
@@ -25,9 +12,6 @@ void wait_for_vsync(void);
 
 // Pick an indexed color as a palette element
 void set_palette(uint8_t index, uint8_t value);
-
-// Blit a sprite onto the work buffer, using a simple XOR strategy
-void blit_sprite_xor(const uint8_t *sprite, const struct rect *position);
 
 // Blit or unblit a sprite onto the work buffer, swapping the content of the buffer with the sprite asset
 void blit_sprite_swap(const uint8_t *sprite, const struct rect *position);

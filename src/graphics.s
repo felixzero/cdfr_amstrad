@@ -1,7 +1,6 @@
 .globl _wait_for_vsync
 .globl _swap_buffers
 .globl _set_palette
-.globl _blit_sprite_xor
 .globl _blit_sprite_swap
 .globl _get_current_buffer
 
@@ -63,47 +62,6 @@ _set_palette:
     ret
 
 
-; Blit a sprite onto the work buffer, using a simple XOR strategy
-; Args: HL = address to sprite data, DE = rect structure with the destination position
-; Ret: -
-; Modifies: AF, BC, DE, HL, IY
-_blit_sprite_xor:
-    ; IY := rect
-    push de
-    pop iy
-
-    ; FOR B = rect.h to 1 (loop over columns)
-    ld b, RECT_H(iy)
-loop_lines$0:
-    ; A := rect.y + b - 1
-    ld a, RECT_Y(iy)
-    add b
-    dec a
-    ; DE is set to the screen destination address
-    call address_of_position
-
-    ; FOR C = rect.w to 1 (loop over lines)
-    ld c, RECT_W(iy)
-    srl c
-    xor a
-loop_columns$0:
-    ; *DE := *DE ^ *HL
-    ld a, (de)
-    xor a, (hl)
-    ld (de), a
-    ; HL++; DE++; C--
-    inc hl
-    inc de
-    dec c
-    jr NZ, loop_columns$0
-
-    ; ENDFOR (loop over columns)
-    dec b
-    jr NZ, loop_lines$0
-
-    ret
-
-
 ; Blit a sprite onto the work buffer, exchanging the content of the assets with a backup of the screen
 ; Args: HL = address to sprite data, DE = rect structure with the destination position
 ; Ret: -
@@ -112,38 +70,94 @@ _blit_sprite_swap:
     ; IY := rect
     push de
     pop iy
+    push hl
+    pop de
 
-    ; FOR B = rect.h to 1 (loop over columns)
-    ld b, RECT_H(iy)
-loop_lines$1:
-    ; A := rect.y + b - 1
+    ; == Calculate screen destination address in HL ==
+    ; (HL = 80 * (y / 8) + 0x0800 * (y % 8) + (0xC000 or 0x4000) + x)
+    ; A = 0x08 * (y % 8)
     ld a, RECT_Y(iy)
-    add b
-    dec a
-    ; DE is set to the screen destination address
-    call address_of_position
+    and #0x07
+    sla a
+    sla a
+    sla a
 
-    ld c, RECT_W(iy)
-    srl c
+    ; B = A + 0xC0 or 0x40
+    add #0x40
+    ld b, a
+    ld a, (#current_buffer)
+    bit 5, a
+    jr NZ, skip$
+    set 7, b
+skip$:
+
+    ; C = x
+    ld a, RECT_X(iy)
+    srl a
+    ld c, a
+
+    ; HL = 80 * (y / 8)
+    ld a, RECT_Y(iy)
+    srl a
+    srl a
+    srl a ; A = y / 8
+    ld l, a
+    sla a
+    sla a
+    add l ; A = 5 * (y / 8)
+    ld l, a
+    ld h, #0 ; HL = 5 * (y / 8)
+    add hl, hl
+    add hl, hl
+    add hl, hl
+    add hl, hl ; HL = 80 * (y / 8)
+
+    ; HL = 80 * (y / 8) + 0x0800 * (y % 8) + (0xC000 or 0x4000) + x
+    add hl, bc
+
+    ; FOR C = rect.h to 1 (loop over columns)
+    ld c, RECT_H(iy)
+
+loop_lines$1:
+    ; Save beginning of line
+    push hl
+    ld b, RECT_W(iy)
+    srl b
 
 loop_columns$1:
     ; HL = sprite, DE = screen; perform swap
-    ld a, (hl)
-    cp a, #0
-    jr Z, skip_trans$
-    push af
     ld a, (de)
-    ld (hl), a
-    pop af
+    or a
+    jr Z, skip_trans$
+    ex af, af'
+    ld a, (hl)
     ld (de), a
+    ex af, af'
+    ld (hl), a
 skip_trans$:
     inc hl
     inc de
-    dec c
-    jr NZ, loop_columns$1
+    djnz loop_columns$1
+
+    ; Calculate next line
+    ; First restore beginning of line
+    pop hl
+    ; Next line = line + 0x0800
+    ld a, h
+    add #0x08
+    ld h, a
+    ; If bit 6 is 1, still inside the screen
+    bit 6, h
+    jr NZ, normal_line$
+    push de
+    ; Jump into next block
+    ld de, #(-0xF800 + 0xC050 - 0x0800)
+    add hl, de
+    pop de
+normal_line$:
 
     ; ENDFOR (loop over columns)
-    dec b
+    dec c
     jr NZ, loop_lines$1
 
     ret
@@ -162,83 +176,6 @@ ret$:
     ret
 
 
-; Returns the address in the work buffer of the point at coordinate (rect.x, rect.y + A)
-; Args: A = Y offset
-; Ret: DE = address
-; Modifies: AF, DE
-address_of_position:
-    push hl
-
-    ; Read high byte
-    ld h, #(screen_lookup_table_h >> 8)
-    ld l, a
-    ld d, (hl)
-    ld a, (#current_buffer)
-    bit 5, a
-    jr NZ, skip$
-    set 7, d
-skip$:
-
-    ; Read low byte
-    ld h, #(screen_lookup_table_l >> 8)
-    srl l
-    srl l
-    srl l
-    ld a, RECT_X(iy)
-    srl a
-    add a, (hl)
-    jr NC, skip_carry$
-    inc d
-skip_carry$:
-    ld e, a
-
-    pop hl
-    ret
-
 .area _INITIALIZED
 current_buffer:
     .db BUFFER_C000
-
-.area _LOOKUP_TABLE
-; L = [hex((80 * (y // 8) + (y % 8) * 0x800) >> 8 + 0x40) for y in range(256)]
-; for x in range(256 // 8):
-;    print(".db", ", ".join(L[8 * x: 8 * (x + 1)]))
-screen_lookup_table_h:
-    .db 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78
-    .db 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78
-    .db 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78
-    .db 0x40, 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78
-    .db 0x41, 0x49, 0x51, 0x59, 0x61, 0x69, 0x71, 0x79
-    .db 0x41, 0x49, 0x51, 0x59, 0x61, 0x69, 0x71, 0x79
-    .db 0x41, 0x49, 0x51, 0x59, 0x61, 0x69, 0x71, 0x79
-    .db 0x42, 0x4a, 0x52, 0x5a, 0x62, 0x6a, 0x72, 0x7a
-    .db 0x42, 0x4a, 0x52, 0x5a, 0x62, 0x6a, 0x72, 0x7a
-    .db 0x42, 0x4a, 0x52, 0x5a, 0x62, 0x6a, 0x72, 0x7a
-    .db 0x43, 0x4b, 0x53, 0x5b, 0x63, 0x6b, 0x73, 0x7b
-    .db 0x43, 0x4b, 0x53, 0x5b, 0x63, 0x6b, 0x73, 0x7b
-    .db 0x43, 0x4b, 0x53, 0x5b, 0x63, 0x6b, 0x73, 0x7b
-    .db 0x44, 0x4c, 0x54, 0x5c, 0x64, 0x6c, 0x74, 0x7c
-    .db 0x44, 0x4c, 0x54, 0x5c, 0x64, 0x6c, 0x74, 0x7c
-    .db 0x44, 0x4c, 0x54, 0x5c, 0x64, 0x6c, 0x74, 0x7c
-    .db 0x45, 0x4d, 0x55, 0x5d, 0x65, 0x6d, 0x75, 0x7d
-    .db 0x45, 0x4d, 0x55, 0x5d, 0x65, 0x6d, 0x75, 0x7d
-    .db 0x45, 0x4d, 0x55, 0x5d, 0x65, 0x6d, 0x75, 0x7d
-    .db 0x45, 0x4d, 0x55, 0x5d, 0x65, 0x6d, 0x75, 0x7d
-    .db 0x46, 0x4e, 0x56, 0x5e, 0x66, 0x6e, 0x76, 0x7e
-    .db 0x46, 0x4e, 0x56, 0x5e, 0x66, 0x6e, 0x76, 0x7e
-    .db 0x46, 0x4e, 0x56, 0x5e, 0x66, 0x6e, 0x76, 0x7e
-    .db 0x47, 0x4f, 0x57, 0x5f, 0x67, 0x6f, 0x77, 0x7f
-    .db 0x47, 0x4f, 0x57, 0x5f, 0x67, 0x6f, 0x77, 0x7f
-    .db 0x47, 0x4f, 0x57, 0x5f, 0x67, 0x6f, 0x77, 0x7f
-    .db 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78, 0x80
-    .db 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78, 0x80
-    .db 0x48, 0x50, 0x58, 0x60, 0x68, 0x70, 0x78, 0x80
-    .db 0x49, 0x51, 0x59, 0x61, 0x69, 0x71, 0x79, 0x81
-    .db 0x49, 0x51, 0x59, 0x61, 0x69, 0x71, 0x79, 0x81
-    .db 0x49, 0x51, 0x59, 0x61, 0x69, 0x71, 0x79, 0x81
-
-screen_lookup_table_l:
-    .db 0x00, 0x50, 0xa0, 0xf0, 0x40, 0x90, 0xe0, 0x30
-    .db 0x80, 0xd0, 0x20, 0x70, 0xc0, 0x10, 0x60, 0xb0
-    .db 0x00, 0x50, 0xa0, 0xf0, 0x40, 0x90, 0xe0, 0x30
-    .db 0x80, 0xd0, 0x20, 0x70, 0xc0, 0x10, 0x60, 0xb0

@@ -6,8 +6,8 @@
 
 static sprite_handle_t robot_sprite;
 struct point s = {
-    .x = 0,
-    .y = 0,
+    .x = 50,
+    .y = 50,
 };
 
 #define STONE_SPRITE_W 14
@@ -23,12 +23,13 @@ extern uint8_t block_1e[], block_2e[], block_3e[], block_3s[];
 void init_model_view(void)
 {
     struct rect r = {
-        .x = 0,
-        .y = 0,
+        .x = 50,
+        .y = 50,
         .w = 12,
         .h = 26
     };
     robot_sprite = create_sprite(robot_1s, &r);
+    set_sprite_z_index(robot_sprite, 200);
 
     r.w = STONE_SPRITE_W;
     r.h = STONE_SPRITE_H;
@@ -44,9 +45,6 @@ void init_model_view(void)
         quarry_sprites[i] = create_sprite(block_3s, &r);
         set_sprite_z_index(quarry_sprites[i], 255 - r.y);
     }
-
-    initialize_all_sprites();
-    //set_sprite_z_index(robot_sprite, 200);
 }
 
 void update_graphics(void)
@@ -80,13 +78,17 @@ void update_graphics(void)
     
     move_sprite(robot_sprite, &s);
     set_sprite_z_index(robot_sprite, 255 - s.y);
+    trigger_sprite_redraw(robot_sprite); // 6.5 ms
 
-    clear_sprites();
-    recalculate_drawing_order();
+    //recalculate_drawing_order();
+    //clear_sprites();
+    
     /*if (!(keys & KEY_Z)) {
         change_sprite_asset(robot_sprite, robot_1n);
     }*/
-    draw_sprites();
+
+    draw_sprites(); // 14 ms, including 5.5 ms outside blits
+
     wait_for_vsync();
     swap_buffers();
 }

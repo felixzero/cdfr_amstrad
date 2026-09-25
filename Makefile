@@ -3,15 +3,16 @@ PGM_NAME=cdfr
 ASM=sdasz80
 ASMFLAGS=
 CC=sdcc
-CCFLAGS=-mz80 --Werror
-LDFLAGS=-mz80 --code-loc 0x8010 --data-loc 0x0100 -Wl-b_INITIALIZED=0x9120 -Wl-b_INIT=0x8000 -Wl-b_LOOKUP_TABLE=0x9000 --no-std-crt0
+CCFLAGS=-mz80
+LDFLAGS=-mz80 --code-loc 0x8010 --data-loc 0x0100 -Wl-b_INITIALIZED=0x9120 -Wl-b_INIT=0x8000 --no-std-crt0
 EMULATOR=/opt/AceDL/AceDL
 
 ASM_OBJS= \
 	build/crt0.s.rel \
 	build/sprite_assets.s.rel \
 	build/graphics.s.rel \
-	build/inputs.s.rel
+	build/inputs.s.rel \
+	build/rect.s.rel
 
 C_OBJS= \
 	build/main.c.rel \
