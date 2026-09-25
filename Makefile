@@ -3,7 +3,7 @@ PGM_NAME=cdfr
 ASM=sdasz80
 ASMFLAGS=
 CC=sdcc
-CCFLAGS=-mz80
+CCFLAGS=-mz80 -Ibuild/
 LDFLAGS=-mz80 --code-loc 0x8010 --data-loc 0x0100 -Wl-b_INITIALIZED=0x9120 -Wl-b_INIT=0x8000 --no-std-crt0
 EMULATOR=/opt/AceDL/AceDL
 
@@ -32,7 +32,7 @@ SPRITE_ASSETS= \
 	artworks/robot_1n.png \
 	artworks/robot_1s.png \
 	artworks/robot_1w.png \
-	artworks/robot_2e.png \
+	artworks/robot_1e.png \
 	artworks/robot_2n.png \
 	artworks/robot_2s.png \
 	artworks/robot_2w.png \
@@ -52,7 +52,7 @@ build/sprite_assets.s.rel: build/sprite_assets.s
 build/%.s.rel: src/%.s
 	$(ASM) $(ASMFLAGS) -o $@ $<
 
-build/%.c.rel: src/%.c
+build/%.c.rel: src/%.c build/sprite_assets.s.rel
 	$(CC) $(CCFLAGS) -c $< -o $@
 
 build/$(PGM_NAME).ihx: $(ASM_OBJS) $(C_OBJS)

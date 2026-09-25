@@ -13,12 +13,16 @@ def interleaf(p1: int, p2: int) -> int:
 
 if __name__ == "__main__":
     sprite_data = {}
+    sprites_sizes = {}
+    total_size = 0
     
     for input_image in sys.argv[1:]:
         img = Image.open(input_image)
         pixel_values = list(img.get_flattened_data())
+        total_size += img.width * img.height
         
-        sprite_data[pathlib.Path(input_image).stem] = [
+        sprite_name = pathlib.Path(input_image).stem
+        sprite_data[sprite_name] = [
             [
                 interleaf(x, y)
                 for x, y in zip(
@@ -28,14 +32,25 @@ if __name__ == "__main__":
             ]
             for line_number in range(img.height)
         ]
+        sprites_sizes[sprite_name] = (img.width, img.height)
 
     with open("build/sprite_assets.s", "w") as f:
         for sprite_name in sprite_data:
-            f.write(f".globl _{sprite_name}\n")
+            f.write(f".globl _asset_{sprite_name}\n")
         f.write("\n")
         f.write(".area _INITIALIZED\n")
         for sprite_name, pixels in sprite_data.items():
-            f.write(f"_{sprite_name}:\n")
+            f.write(f"_asset_{sprite_name}:\n")
             for line in pixels:
                 f.write(".db " + ", ".join(str(x) for x in line) + "\n")
             f.write("\n")
+
+    with open("build/sprite_assets.h", "w") as f:
+        f.write("#include <stdint.h>\n")
+        
+        f.write(f"#define ASSET_TOTAL_SIZE {total_size}\n\n")
+        
+        for sprite_name in sprite_data:
+            f.write(f"#define ASSET_{sprite_name.upper()}_WIDTH {sprites_sizes[sprite_name][0]}\n")
+            f.write(f"#define ASSET_{sprite_name.upper()}_HEIGHT {sprites_sizes[sprite_name][1]}\n")
+            f.write(f"extern uint8_t asset_{sprite_name}[];\n\n")

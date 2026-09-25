@@ -27,11 +27,13 @@ _rect_intersects:
 
     ld a, RECT_Y(iy)
     add RECT_H(ix)
+    inc a
     cp RECT_Y(ix)
     jr C, false$
 
     ld a, RECT_Y(ix)
     add RECT_H(iy)
+    inc a
     cp RECT_Y(iy)
     jr C, false$
 
