@@ -17,7 +17,6 @@ ASM_OBJS= \
 C_OBJS= \
 	build/main.c.rel \
 	build/sprites.c.rel \
-	build/game_model.c.rel \
 	build/model_view.c.rel
 
 BACKGROUND_OBJ=build/background.scr

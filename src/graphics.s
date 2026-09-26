@@ -18,6 +18,10 @@ BUFFER_C000 = 0x30
 BUFFER_4000 = 0x10
 BUFFER_SWAP_XOR_MASK = 0x20
 
+LINE_JUMP_OFFSET = 0x0800
+BLOCK_JUMP_OFFSET = (-0xF800 + 0xC050)
+
+
 ; Block execution until the beginning of VSync
 ; Args: -
 ; Ret: -
@@ -142,16 +146,16 @@ skip_trans$:
     ; Calculate next line
     ; First restore beginning of line
     pop hl
-    ; Next line = line + 0x0800
+    ; Next line = line + LINE_JUMP_OFFSET
     ld a, h
-    add #0x08
+    add #(LINE_JUMP_OFFSET >> 8)
     ld h, a
     ; If bit 6 is 1, still inside the screen
     bit 6, h
     jr NZ, normal_line$
     push de
     ; Jump into next block
-    ld de, #(-0xF800 + 0xC050 - 0x0800)
+    ld de, #(BLOCK_JUMP_OFFSET - LINE_JUMP_OFFSET)
     add hl, de
     pop de
 normal_line$:

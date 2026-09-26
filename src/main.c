@@ -2,7 +2,6 @@
 
 #include "graphics.h"
 #include "inputs.h"
-#include "game_model.h"
 #include "model_view.h"
 
 main()
@@ -40,7 +39,6 @@ __endasm;
     memcpy((void*)0xC000, (void*)0x4000, 0x4000);
     swap_buffers();
 
-    reset_game_model();
     init_model_view();
 
     while (1) {
