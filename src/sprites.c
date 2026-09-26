@@ -118,13 +118,13 @@ void draw_sprites(void)
     for (i = number_of_sprites - 1; i != 0xFF; --i) {
         effective = history[current_buffer].blit_order[i];
         blit = &history[current_buffer].blitted_sprites[effective];
-        request = &requested_sprites[effective];
 
         if ((blit->status & STATUS_NEED_REDRAW_FLAG) && (blit->status & STATUS_DISPLAYED_FLAG)) {
             blit_sprite_swap(blit->screen_backup, &blit->rect);
         }
     }
 
+    // Reorder sprites by z-index
     for (i = 1; i < number_of_sprites; ++i) {
         effective = requested_blit_order[i];
         j = i;
@@ -142,15 +142,18 @@ void draw_sprites(void)
         request = &requested_sprites[effective];
         
         // Do not show sprites with zero z-index
-        if ((blit->status & STATUS_NEED_REDRAW_FLAG) && request->z_index) {
+        if ((blit->status & STATUS_NEED_REDRAW_FLAG)) {
             if (blit->status & STATUS_GRAPHICS_CHANGED) {
                 memcpy(blit->screen_backup, request->graphics, (request->rect.w * request->rect.h) / 2);
             }
 
-            blit_sprite_swap(blit->screen_backup, &request->rect);
-            memcpy(&blit->rect, &request->rect, sizeof(struct rect));
-
-            blit->status = STATUS_DISPLAYED_FLAG;
+            if (request->z_index) {
+                blit_sprite_swap(blit->screen_backup, &request->rect);
+                blit->status = STATUS_DISPLAYED_FLAG;
+                memcpy(&blit->rect, &request->rect, sizeof(struct rect));
+            } else {
+                blit->status = 0;
+            }
         }
 
         history[current_buffer].blit_order[i] = effective;

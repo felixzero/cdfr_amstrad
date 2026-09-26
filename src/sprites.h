@@ -4,6 +4,8 @@
 
 typedef uint8_t sprite_handle_t;
 
+#define SPRITE_Z_INDEX_HIDDEN       0
+
 // Register a new sprite, setting graphics, size and position
 sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect);
 
