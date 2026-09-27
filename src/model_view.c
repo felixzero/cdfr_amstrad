@@ -3,6 +3,7 @@
 #include "sprites.h"
 #include "inputs.h"
 #include "sprite_assets.h"
+#include "game_clock.h"
 
 #include <string.h>
 
@@ -144,6 +145,9 @@ void init_model_view(void)
             break;
         }
     }
+
+    // Init clock
+    init_game_clock();
 }
 
 
@@ -214,12 +218,13 @@ static void create_tower_sprite(uint8_t obstacle_id)
 }
 
 
-void update_graphics(void)
+void update_model_view(void)
 {
     static uint32_t keys;
     static uint8_t increment;
     static uint8_t i;
     static struct point p;
+    static uint8_t frame_counter = 0;
 
     keys = get_keypress();
 
@@ -270,7 +275,15 @@ void update_graphics(void)
 
     }
 
-    draw_sprites(); // 14 ms, including 5.5 ms outside blits
+    draw_sprites();
+
+    // Update clock display
+    frame_counter++;
+    if (frame_counter >= FRAME_PER_SECONDS) {
+        frame_counter = 0;
+        decrement_game_clock();
+    }
+    update_clock_display();
 
     wait_for_vsync();
     swap_buffers();

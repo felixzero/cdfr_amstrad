@@ -1,6 +1,7 @@
 .globl _wait_for_vsync
 .globl _swap_buffers
 .globl _set_palette
+.globl _blit_sprite_xor
 .globl _blit_sprite_swap
 .globl _get_current_buffer
 
@@ -62,6 +63,101 @@ _set_palette:
 
     ld c, l
     out (c), c
+
+    ret
+
+
+; Blit a sprite onto the work buffer, using a simple XOR strategy
+; Args: HL = address to sprite data, DE = rect structure with the destination position
+; Ret: -
+; Modifies: AF, BC, DE, HL, IY
+_blit_sprite_xor:
+    ; IY := rect
+    push de
+    pop iy
+    push hl
+    pop de
+
+    ; == Calculate screen destination address in HL ==
+    ; (HL = 80 * (y / 8) + 0x0800 * (y % 8) + (0xC000 or 0x4000) + x)
+    ; A = 0x08 * (y % 8)
+    ld a, RECT_Y(iy)
+    and #0x07
+    sla a
+    sla a
+    sla a
+
+    ; B = A + 0xC0 or 0x40
+    add #0x40
+    ld b, a
+    ld a, (#current_buffer)
+    bit 5, a
+    jr NZ, skip$2
+    set 7, b
+skip$2:
+
+    ; C = x
+    ld a, RECT_X(iy)
+    srl a
+    ld c, a
+
+    ; HL = 80 * (y / 8)
+    ld a, RECT_Y(iy)
+    srl a
+    srl a
+    srl a ; A = y / 8
+    ld l, a
+    sla a
+    sla a
+    add l ; A = 5 * (y / 8)
+    ld l, a
+    ld h, #0 ; HL = 5 * (y / 8)
+    add hl, hl
+    add hl, hl
+    add hl, hl
+    add hl, hl ; HL = 80 * (y / 8)
+
+    ; HL = 80 * (y / 8) + 0x0800 * (y % 8) + (0xC000 or 0x4000) + x
+    add hl, bc
+
+    ; FOR C = rect.h to 1 (loop over columns)
+    ld c, RECT_H(iy)
+
+loop_lines$2:
+    ; Save beginning of line
+    push hl
+    ld b, RECT_W(iy)
+    srl b
+
+loop_columns$2:
+    ; HL = screen, DE = sprite; perform swap
+    ld a, (de)
+    xor a, (hl)
+    ld (hl), a
+    inc hl
+    inc de
+    djnz loop_columns$2
+
+    ; Calculate next line
+    ; First restore beginning of line
+    pop hl
+    ; Next line = line + LINE_JUMP_OFFSET
+    ld a, h
+    add #(LINE_JUMP_OFFSET >> 8)
+    ld h, a
+    ; If bit 6 is 1, still inside the screen
+    bit 6, h
+    jr NZ, normal_line$2
+    push de
+    ; Jump into next block
+    ld de, #(BLOCK_JUMP_OFFSET - LINE_JUMP_OFFSET)
+    add hl, de
+    pop de
+normal_line$2:
+
+    ; ENDFOR (loop over columns)
+    dec c
+    jr NZ, loop_lines$2
 
     ret
 

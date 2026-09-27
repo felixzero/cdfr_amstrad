@@ -3,6 +3,7 @@
 #include "graphics.h"
 #include "inputs.h"
 #include "model_view.h"
+#include "game_clock.h"
 
 main()
 {
@@ -42,6 +43,6 @@ __endasm;
     init_model_view();
 
     while (1) {
-        update_graphics();
+        update_model_view();
     }
 }

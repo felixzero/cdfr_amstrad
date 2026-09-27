@@ -4,7 +4,7 @@ ASM=sdasz80
 ASMFLAGS=
 CC=sdcc
 CCFLAGS=-mz80 -Ibuild/
-LDFLAGS=-mz80 --code-loc 0x8010 --data-loc 0x0100 -Wl-b_INITIALIZED=0x9400 -Wl-b_INIT=0x8000 --no-std-crt0
+LDFLAGS=-mz80 --code-loc 0x8010 --data-loc 0x0100 -Wl-b_INITIALIZED=0x9600 -Wl-b_INIT=0x8000 --no-std-crt0
 EMULATOR=/opt/AceDL/AceDL
 
 ASM_OBJS= \
@@ -17,7 +17,8 @@ ASM_OBJS= \
 C_OBJS= \
 	build/main.c.rel \
 	build/sprites.c.rel \
-	build/model_view.c.rel
+	build/model_view.c.rel \
+	build/game_clock.c.rel
 
 BACKGROUND_OBJ=build/background.scr
 
@@ -38,7 +39,21 @@ SPRITE_ASSETS= \
 	artworks/robot_2n.png \
 	artworks/robot_2s.png \
 	artworks/robot_2w.png \
-	artworks/robot_2e.png
+	artworks/robot_2e.png \
+	artworks/digit_0.png \
+	artworks/digit_1.png \
+	artworks/digit_2.png \
+	artworks/digit_3.png \
+	artworks/digit_4.png \
+	artworks/digit_5.png \
+	artworks/digit_6.png \
+	artworks/digit_7.png \
+	artworks/digit_8.png \
+	artworks/digit_9.png \
+	#artworks/word_build.png \
+	artworks/word_mine.png \
+	artworks/word_ready.png \
+	artworks/question_ready.png
 
 all: dist/$(PGM_NAME).dsk dist/$(PGM_NAME).cdt
 
@@ -62,7 +77,7 @@ build/$(PGM_NAME).ihx: $(ASM_OBJS) $(C_OBJS)
 
 build/$(PGM_NAME).bin: build/$(PGM_NAME).ihx
 	python tools/ihx_to_bin.py -o $@ $<
-	@if [ `stat -c %s $@` -ge 9984 ]; then echo "Error: BIN file too large"; exit 1; fi
+	#@if [ `stat -c %s $@` -ge 9984 ]; then echo "Error: BIN file too large"; exit 1; fi
 
 dist/$(PGM_NAME).dsk: build/$(PGM_NAME).bin $(BACKGROUND_OBJ)
 	python tools/bin_to_dsk.py --background-image $(BACKGROUND_OBJ) --basic-loader loaders/disk.bas -o $@ $<

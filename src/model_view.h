@@ -59,6 +59,8 @@
 
 #define IS_ORIENTED_EAST(x)             !(obstacle_flags[x] & OBSTACLE_FLAG_SOUTH_ORIENTED)
 
+#define FRAME_PER_SECONDS               12
+
 void init_model_view(void);
 
-void update_graphics(void);
+void update_model_view(void);

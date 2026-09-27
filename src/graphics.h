@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include "rect.h"
 
+#define NUMBER_OF_BUFFERS 2
+
 // Block execution until the beginning of VSync
 void swap_buffers(void);
 
@@ -12,6 +14,9 @@ void wait_for_vsync(void);
 
 // Pick an indexed color as a palette element
 void set_palette(uint8_t index, uint8_t value);
+
+// Blit or unblit a sprite onto the work buffer, xoring the content of the buffer with the sprite asset
+void blit_sprite_xor(const uint8_t *sprite, const struct rect *position);
 
 // Blit or unblit a sprite onto the work buffer, swapping the content of the buffer with the sprite asset
 void blit_sprite_swap(const uint8_t *sprite, const struct rect *position);

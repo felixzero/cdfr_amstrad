@@ -1,4 +1,3 @@
-#define NUMBER_OF_BUFFERS 2
 #define MAX_NUMBER_OF_SPRITES 32
 
 #include "sprites.h"
