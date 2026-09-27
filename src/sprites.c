@@ -53,6 +53,7 @@ sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect)
     memcpy(&requested_sprites[number_of_sprites].rect, rect, sizeof(struct rect));
     requested_sprites[number_of_sprites].z_index = 0;
 
+
     for (i = 0; i < NUMBER_OF_BUFFERS; ++i) {
         memset(&history[i].blitted_sprites[number_of_sprites], 0, sizeof(struct blitted_sprite));
         history[i].blitted_sprites[number_of_sprites].status |= STATUS_GRAPHICS_CHANGED;

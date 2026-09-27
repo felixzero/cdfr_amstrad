@@ -137,25 +137,34 @@ class DiskManager:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("bin_to_dsk.py", description="Convert a binary file compiled file to an Amstrad disk file")
-    parser.add_argument("input")
-    parser.add_argument("-l", "--location", default="0x8000")
-    parser.add_argument("--background-image")
+    parser.add_argument("--code", required=True)
+    parser.add_argument("--initialized", required=True)
+    parser.add_argument("--background", required=True)
+    parser.add_argument("-c", "--code-location", default="0x8000")
+    parser.add_argument("-b", "--background-location", default="0x4000")
+    parser.add_argument("-d", "--initialized-location", default="0x9600")
     parser.add_argument("--basic-loader")
     parser.add_argument("-o", "--output", required=True)
 
     args = parser.parse_args()
     
-    with open(args.input, "rb") as f:
-        raw_binary_data = f.read()
-    data_location = int(args.location, base=16)
-        
+    code_location = int(args.code_location, base=16)
+    background_location = int(args.background_location, base=16)
+    initialized_location = int(args.initialized_location, base=16)
+
     manager = DiskManager()
-    manager.add_file("CDFR", "BIN", raw_binary_data, data_location)
-    
-    if args.background_image is not None:
-        with open(args.background_image, "rb") as f:
-            raw_binary_data = f.read()
-        manager.add_file("BACKGND", "BIN", raw_binary_data, 0x4000)
+
+    with open(args.code, "rb") as f:
+        raw_binary_data = f.read()
+    manager.add_file("CODE", "BIN", raw_binary_data, code_location)
+
+    with open(args.initialized, "rb") as f:
+        raw_binary_data = f.read()
+    manager.add_file("INIT", "BIN", raw_binary_data, code_location)    
+
+    with open(args.background, "rb") as f:
+        raw_binary_data = f.read()
+    manager.add_file("BACKGND", "BIN", raw_binary_data, background_location)
     
     if args.basic_loader is not None:
         with open(args.basic_loader, "rb") as f:

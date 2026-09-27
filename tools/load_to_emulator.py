@@ -31,10 +31,17 @@ def write_block(code: bytes, starting_addr: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("load_to_emulator.py", description="Load the compiled program to AceDL via sockets")
     parser.add_argument("--code", required=True)
+    parser.add_argument("--initialized", required=True)
     parser.add_argument("--background", required=True)
+    parser.add_argument("-c", "--code-location", default="0x8000")
+    parser.add_argument("-b", "--background-location", default="0x4000")
+    parser.add_argument("-d", "--initialized-location", default="0x9600")
 
     args = parser.parse_args()
-    
+    code_location = int(args.code_location, base=16)
+    background_location = int(args.background_location, base=16)
+    initialized_location = int(args.initialized_location, base=16)
+
     initial_time = time.time()
     while True:
         try:
@@ -44,18 +51,25 @@ if __name__ == "__main__":
             if time.time() - initial_time > TIMEOUT:
                 exit(1)
             time.sleep(1.0)
-    
-    query_server({"cmd": "reset"})
+
+    query_server({"cmd": "halt"})
     
     with open(args.code, "rb") as f:
         code = f.read()
-    write_block(code, 0x8000)
+    write_block(code, code_location)
 
     with open(args.background, "rb") as f:
         background = f.read()
-    write_block(background, 0x4000)
+    write_block(background, background_location)
+    
+    with open(args.initialized, "rb") as f:
+        initialized = f.read()
+    write_block(initialized, initialized_location)
     
     query_server({
         "cmd": "setRegisters",
-        "pc": 0x8000
+        "pc": code_location,
+        "sp": 0xBFFF
     })
+    query_server({"cmd": "continue"})
+    

@@ -115,6 +115,7 @@ void init_model_view(void)
     robots[1].position.y = ROBOT_STARTING_POSITION_V;
     robots[1].orientation = ORIENTATION_WEST;
 
+
     // Create robot sprites
     r.w = ASSET_ROBOT_1E_WIDTH;
     r.h = ASSET_ROBOT_1E_HEIGHT;
@@ -128,6 +129,7 @@ void init_model_view(void)
     r.y = p.y;
     robots[1].sprite = create_sprite(asset_robot_2w, &r);
     set_sprite_z_index(robots[1].sprite, 0);
+
 
     // Create obstacle sprites
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {

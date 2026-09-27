@@ -4,14 +4,9 @@
 .area _DATA
 
 .area _INIT (ABS)
-  di
-  call _main
-
-_putchar:
-  ld a, l
-  call 0xBB5A
-  ld de, #00
-  ret
+    ld sp, #0xBFFF
+    di
+    call _main
 
 .area _CODE
 .area _INITIALIZED
