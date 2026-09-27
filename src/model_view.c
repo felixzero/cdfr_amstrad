@@ -72,7 +72,8 @@ static void create_quarry_sprite(uint8_t obstacle_id);
 static void create_wall_sprite(uint8_t obstacle_id);
 static void create_tower_sprite(uint8_t obstacle_id);
 static inline void game_uv_to_screen_xy(struct point *xy, const struct point *uv);
-static int8_t check_collisions(struct point *uv, bool include_empty);
+static int8_t check_collisions(struct point *uv, uint8_t robot_id);
+static int8_t check_mining_interaction(struct point *uv);
 static void displace_robot(struct point *destination, uint8_t robot_id, int8_t increment);
 static void manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id);
 static void update_obstacle_sprite(uint8_t obstacle_id);
@@ -243,16 +244,14 @@ void update_graphics(void)
             increment = !(keys & robots[i].control_keys[CONTROL_KEY_UP]) ? 2 : -2;
             displace_robot(&p, i, increment);
 
-            if (!check_collisions(&p, true)) {
+            if (!check_collisions(&p, i)) {
                 robots[i].position.x = p.x;
                 robots[i].position.y = p.y;
             }
         } else if (!(keys & robots[i].control_keys[CONTROL_KEY_ACTION])) {
             displace_robot(&p, i, ROBOT_MINING_DISTANCE);
-            int8_t obstacle_id = check_collisions(&p, false);
-            if (obstacle_id >= COLLISION_OBSTACLE_START) {
-                obstacle_id -= COLLISION_OBSTACLE_START;
-                
+            int8_t obstacle_id = check_mining_interaction(&p);
+            if (obstacle_id >= 0) {
                 if ((robots[i].action_timer == MINING_TIMER_OUT)) {
                     manage_mining_interaction(obstacle_id, i);
                     robots[i].action_timer = 0;
@@ -285,15 +284,15 @@ static inline void game_uv_to_screen_xy(struct point *xy, const struct point *uv
 }
 
 
-static int8_t check_collisions(struct point *uv, bool include_empty)
+static int8_t check_collisions(struct point *uv, uint8_t robot_id)
 {
     static struct rect r;
     static uint8_t i;
 
     r.w = ROBOT_HITBOX * 2;
     r.h = ROBOT_HITBOX * 2;
-    r.x = robots[1].position.x - ROBOT_HITBOX;
-    r.y = robots[1].position.y - ROBOT_HITBOX;
+    r.x = robots[1 - robot_id].position.x - ROBOT_HITBOX;
+    r.y = robots[1 - robot_id].position.y - ROBOT_HITBOX;
 
     // Out of table
     if ((uv->x & 0x80) || (uv->y & 0x80) || (uv->x > TABLE_EDGE_U) || (uv->y > TABLE_EDGE_V)) {
@@ -301,18 +300,31 @@ static int8_t check_collisions(struct point *uv, bool include_empty)
     }
 
     // Robot collision
-    if (rect_contains(&r, &robots[0].position)) {
+    if (rect_contains(&r, uv)) {
         return COLLISION_OTHER_ROBOT;
     }
 
     // Obstacle collision
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
-        if (rect_contains(&obstacles[i], uv) && (obstacle_stone_quantity[i] != 0 || !include_empty)) {
+        if (rect_contains(&obstacles[i], uv) && (obstacle_stone_quantity[i] != 0)) {
             return COLLISION_OBSTACLE_START + i;
         }
     }
 
     return COLLISION_NOTHING;
+}
+
+static int8_t check_mining_interaction(struct point *uv)
+{
+    static uint8_t i;
+
+    for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
+        if (rect_contains(&obstacles[i], uv)) {
+            return i;
+        }
+    }
+
+    return -1;
 }
 
 
