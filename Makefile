@@ -4,7 +4,7 @@ ASM=sdasz80
 ASMFLAGS=
 CC=sdcc
 CCFLAGS=-mz80 -Ibuild/
-LDFLAGS=-mz80 --code-loc 0x8010 --data-loc 0x0100 -Wl-b_INITIALIZED=0x9120 -Wl-b_INIT=0x8000 --no-std-crt0
+LDFLAGS=-mz80 --code-loc 0x8010 --data-loc 0x0100 -Wl-b_INITIALIZED=0x9400 -Wl-b_INIT=0x8000 --no-std-crt0
 EMULATOR=/opt/AceDL/AceDL
 
 ASM_OBJS= \
@@ -25,9 +25,12 @@ SPRITE_ASSETS= \
 	artworks/block_1e.png \
 	artworks/block_2e.png \
 	artworks/block_3e.png \
+	artworks/block_3e_built.png \
 	artworks/block_1s.png \
 	artworks/block_2s.png \
 	artworks/block_3s.png \
+	artworks/block_3s_built.png \
+	artworks/tower.png \
 	artworks/robot_1n.png \
 	artworks/robot_1s.png \
 	artworks/robot_1w.png \

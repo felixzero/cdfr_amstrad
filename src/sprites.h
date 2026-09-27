@@ -2,9 +2,9 @@
 
 #include "graphics.h"
 
-typedef uint8_t sprite_handle_t;
+#include <stdbool.h>
 
-#define SPRITE_Z_INDEX_HIDDEN       0
+typedef uint8_t sprite_handle_t;
 
 // Register a new sprite, setting graphics, size and position
 sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect);
@@ -13,8 +13,11 @@ sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect);
 void move_sprite(sprite_handle_t sprite, struct point *position);
 
 // Update sprite z_index
-// If z_index == 0, the sprite is not displayed
-void set_sprite_z_index(sprite_handle_t sprite, uint8_t z_index);
+// If z_index < 0, the sprite is not displayed
+void set_sprite_z_index(sprite_handle_t sprite, int8_t z_index);
+
+// Hide or display the sprite
+void set_sprite_visibility(sprite_handle_t sprite, bool visible);
 
 // Flag the sprite for redraw, as well as other sprites intersecting it
 void trigger_sprite_redraw(sprite_handle_t sprite);

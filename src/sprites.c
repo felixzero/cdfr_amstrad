@@ -10,6 +10,12 @@
 #define STATUS_NEED_REDRAW_FLAG (1 << 1)
 #define STATUS_GRAPHICS_CHANGED (1 << 2)
 
+#define BUFFER_HEAP_SIZE ( \
+    2 * ASSET_ROBOT_2E_WIDTH * ASSET_ROBOT_2E_HEIGHT \
+    + 20 * ASSET_BLOCK_3E_WIDTH * ASSET_BLOCK_3E_HEIGHT \
+    + 8 * ASSET_TOWER_WIDTH * ASSET_TOWER_HEIGHT \
+)
+
 struct blitted_sprite {
     struct rect rect;
     const uint8_t *screen_backup;
@@ -26,7 +32,7 @@ struct requested_sprite
 {
     const uint8_t *graphics;
     struct rect rect;
-    uint8_t z_index;
+    int8_t z_index;
 };
 
 static struct screen_history history[NUMBER_OF_BUFFERS];
@@ -34,7 +40,7 @@ static struct requested_sprite requested_sprites[MAX_NUMBER_OF_SPRITES];
 static sprite_handle_t requested_blit_order[MAX_NUMBER_OF_SPRITES];
 static uint8_t number_of_sprites = 0;
 
-uint8_t buffer_heap[ASSET_TOTAL_SIZE];
+uint8_t buffer_heap[BUFFER_HEAP_SIZE];
 static uint16_t allocated_size = 0;
 
 sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect)
@@ -68,9 +74,16 @@ void move_sprite(sprite_handle_t sprite, struct point *position)
     requested_sprites[sprite].rect.y = position->y;
 }
 
-void set_sprite_z_index(sprite_handle_t sprite, uint8_t z_index)
+void set_sprite_z_index(sprite_handle_t sprite, int8_t z_index)
 {
     requested_sprites[sprite].z_index = z_index;
+}
+
+void set_sprite_visibility(sprite_handle_t sprite, bool visible)
+{
+    if ((requested_sprites[sprite].z_index >= 0) != visible) {
+        requested_sprites[sprite].z_index = -requested_sprites[sprite].z_index;
+    }
 }
 
 void change_sprite_asset(sprite_handle_t sprite, const uint8_t *graphics)
@@ -128,7 +141,7 @@ void draw_sprites(void)
     for (i = 1; i < number_of_sprites; ++i) {
         effective = requested_blit_order[i];
         j = i;
-        while (j > 0 && requested_sprites[requested_blit_order[j - 1]].z_index < requested_sprites[effective].z_index) {
+        while (j > 0 && requested_sprites[requested_blit_order[j - 1]].z_index > requested_sprites[effective].z_index) {
             requested_blit_order[j] = requested_blit_order[j - 1];
             j--;
         }
@@ -147,7 +160,7 @@ void draw_sprites(void)
                 memcpy(blit->screen_backup, request->graphics, (request->rect.w * request->rect.h) / 2);
             }
 
-            if (request->z_index) {
+            if (request->z_index >= 0) {
                 blit_sprite_swap(blit->screen_backup, &request->rect);
                 blit->status = STATUS_DISPLAYED_FLAG;
                 memcpy(&blit->rect, &request->rect, sizeof(struct rect));
