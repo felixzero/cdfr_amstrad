@@ -2,8 +2,7 @@
 
 #include "graphics.h"
 #include "inputs.h"
-#include "model_view.h"
-#include "game_clock.h"
+#include "controller.h"
 
 main()
 {
@@ -40,9 +39,9 @@ __endasm;
     memcpy((void*)0xC000, (void*)0x4000, 0x4000);
     swap_buffers();
 
-    init_model_view();
+    init_controller();
 
     while (1) {
-        update_model_view();
+        update_controller();
     }
 }

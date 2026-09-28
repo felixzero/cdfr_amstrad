@@ -1,18 +1,12 @@
 #pragma once
 
+#include <stdint.h>
+#include "rect.h"
+
 #define ORIENTATION_EAST                0
 #define ORIENTATION_SOUTH               1
 #define ORIENTATION_WEST                2
 #define ORIENTATION_NORTH               3
-
-#define CONTROL_KEY_UP                  0
-#define CONTROL_KEY_DOWN                1
-#define CONTROL_KEY_RIGHT               2
-#define CONTROL_KEY_LEFT                3
-#define CONTROL_KEY_ACTION              4
-
-#define POSITION_X_ORIGIN               58
-#define POSITION_Y_ORIGIN               8
 
 #define TABLE_EDGE_U                    90
 #define TABLE_EDGE_V                    58
@@ -24,19 +18,9 @@
 #define ROBOT_MINING_DISTANCE           4
 
 #define NUMBER_OF_QUARRIES              10
-#define QUARRY_DISPLAY_OFFSET_U         8
-#define QUARRY_DISPLAY_OFFSET_V         7
-#define QUARRY_Z_INDEX_OFFSET           8
-#define INITIAL_NUMBER_OF_STONES        3
-
 #define NUMBER_OF_WALLS                 10
-#define WALL_DISPLAY_OFFSET_U           8
-#define WALL_DISPLAY_OFFSET_V           7
-#define WALL_Z_INDEX_OFFSET             8
-
 #define NUMBER_OF_TOWERS                8
-#define TOWER_DISPLAY_OFFSET_U          6
-#define TOWER_DISPLAY_OFFSET_V          3
+#define INITIAL_NUMBER_OF_STONES        3
 
 #define COLLISION_OUT_OF_TABLE          -1
 #define COLLISION_OTHER_ROBOT           -2
@@ -59,8 +43,17 @@
 
 #define IS_ORIENTED_EAST(x)             !(obstacle_flags[x] & OBSTACLE_FLAG_SOUTH_ORIENTED)
 
-#define FRAME_PER_SECONDS               12
+struct robot_model {
+    struct point position;
+    uint8_t orientation;
+    uint8_t carried_stones;
+    uint8_t action_timer;
+    uint32_t control_keys[5];
+};
 
-void init_model_view(void);
+extern const struct rect obstacles[];
+extern const uint8_t obstacle_flags[NUMBER_OF_OBSTACLES];
+extern uint8_t obstacle_stone_quantity[NUMBER_OF_OBSTACLES];
+extern struct robot_model robots[2];
 
-void update_model_view(void);
+void init_model(void);

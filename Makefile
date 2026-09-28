@@ -26,8 +26,10 @@ ASM_OBJS= \
 C_OBJS= \
 	build/main.c.rel \
 	build/sprites.c.rel \
-	build/model_view.c.rel \
-	build/game_clock.c.rel
+	build/model.c.rel \
+	build/view.c.rel \
+	build/controller.c.rel \
+	build/ui.c.rel
 
 BACKGROUND_OBJ=build/background.scr
 
@@ -59,10 +61,12 @@ SPRITE_ASSETS= \
 	artworks/digit_7.png \
 	artworks/digit_8.png \
 	artworks/digit_9.png \
-	#artworks/word_build.png \
+	artworks/word_build.png \
 	artworks/word_mine.png \
 	artworks/word_ready.png \
-	artworks/question_ready.png
+	artworks/question_ready.png \
+	artworks/question_will_start.png \
+	artworks/question_finished.png
 
 all: dist/$(PGM_NAME).dsk dist/$(PGM_NAME).cdt
 

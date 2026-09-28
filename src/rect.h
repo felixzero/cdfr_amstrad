@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdint.h>
+#include <stdbool.h>
+
 // (0, 0) is the top left corner of the screen
 struct point {
     uint8_t x;

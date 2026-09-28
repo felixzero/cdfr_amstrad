@@ -1,0 +1,292 @@
+#include "controller.h"
+#include "model.h"
+#include "view.h"
+#include "inputs.h"
+#include "ui.h"
+
+enum {
+    GAME_STATE_INIT,
+    GAME_STATE_WAIT_READY,
+    GAME_STATE_321,
+    GAME_STATE_PLAY,
+    GAME_STATE_FINISHED
+};
+
+static uint8_t game_state;
+
+static void update_controller_init(void);
+static void update_controller_wait_ready(void);
+static void update_controller_321(void);
+static void update_controller_play(void);
+
+static uint8_t frame_count, player_ready_flags;
+
+void init_controller(void)
+{
+    game_state = GAME_STATE_INIT;
+    frame_count = 0;
+    player_ready_flags = 0;
+
+    init_model();
+    init_view();
+}
+
+
+void update_controller(void)
+{
+    switch (game_state) {
+        case GAME_STATE_INIT:
+        update_controller_init();
+        break;
+
+        case GAME_STATE_WAIT_READY:
+        update_controller_wait_ready();
+        break;
+
+        case GAME_STATE_321:
+        update_controller_321();
+        break;
+
+        case GAME_STATE_PLAY:
+        update_controller_play();
+        break;
+
+        case GAME_STATE_FINISHED:
+        break;
+    }
+    update_view();
+}
+
+
+static void update_controller_init(void)
+{
+    if (frame_count >= INIT_FRAME_DELAY) {
+        user_messages[0] = PLAYER_MESSAGE_READY;
+        user_messages[1] = PLAYER_MESSAGE_READY;
+        question = QUESTION_READY;
+
+        game_state = GAME_STATE_WAIT_READY;
+    }
+
+    frame_count++;
+}
+
+
+static void update_controller_wait_ready(void)
+{
+    static uint32_t keys;
+    static uint8_t i;
+
+    if (player_ready_flags == 0x03) {
+        clock_digits[0] = 0;
+        clock_digits[1] = 3;
+        question = QUESTION_WILL_START;
+        frame_count = 0;
+
+        game_state = GAME_STATE_321;
+    }
+
+    keys = get_keypress();
+
+    for (i = 0; i < 2; ++i) {
+        if (!(keys & robots[i].control_keys[CONTROL_KEY_ACTION])) {
+            player_ready_flags |= (1 << i);
+            user_messages[i] = PLAYER_MESSAGE_NONE;
+        }
+    }
+}
+
+
+static void update_controller_321(void)
+{
+    if (frame_count >= COUNT_DOWN_DELAY) {
+        if (decrement_game_clock()) {
+            question = QUESTION_NONE;
+            clock_digits[0] = 1;
+            clock_digits[1] = 0;
+
+            game_state = GAME_STATE_PLAY;
+        }
+        frame_count = 0;
+    }
+
+    frame_count++;
+}
+
+
+static void update_controller_play(void)
+{
+    static uint32_t keys;
+    static uint8_t increment;
+    static uint8_t i;
+    static struct point p;
+    static uint8_t frame_counter = 0;
+    static bool change_orientation;
+
+    change_orientation = false;
+    keys = get_keypress();
+
+    for (i = 0; i < 2; ++i) {
+        if (!(keys & robots[i].control_keys[CONTROL_KEY_RIGHT])) {
+            if (robots[i].action_timer == 0) {
+                robots[i].orientation++;
+                robots[i].orientation &= 0x03;
+                change_orientation = true;
+            }
+            robots[i].action_timer++;
+            robots[i].action_timer &= ROTATION_TIMER_MASK;
+        } else if (!(keys & robots[i].control_keys[CONTROL_KEY_LEFT])) {
+            if (robots[i].action_timer == 0) {
+                robots[i].orientation--;
+                robots[i].orientation &= 0x03;
+                change_orientation = true;
+            }
+            robots[i].action_timer++;
+            robots[i].action_timer &= ROTATION_TIMER_MASK;
+        } else if (!(keys & robots[i].control_keys[CONTROL_KEY_UP]) || !(keys & robots[i].control_keys[CONTROL_KEY_DOWN])) {
+            increment = !(keys & robots[i].control_keys[CONTROL_KEY_UP]) ? 2 : -2;
+            displace_robot(&p, i, increment);
+
+            if (!check_collisions(&p, i)) {
+                robots[i].position.x = p.x;
+                robots[i].position.y = p.y;
+            }
+        } else if (!(keys & robots[i].control_keys[CONTROL_KEY_ACTION])) {
+            displace_robot(&p, i, ROBOT_MINING_DISTANCE);
+            int8_t obstacle_id = check_mining_interaction(&p);
+            if (obstacle_id >= 0) {
+                if ((robots[i].action_timer == MINING_TIMER_OUT)) {
+                    manage_mining_interaction(obstacle_id, i);
+                    robots[i].action_timer = 0;
+                } else {
+                    robots[i].action_timer++;
+                }
+            }
+        } else {
+            robots[i].action_timer = 0;
+        }
+
+        update_robot_sprite(i, change_orientation);
+    }
+
+    // Update clock display
+    frame_counter++;
+    if (frame_counter >= FRAME_PER_SECONDS) {
+        frame_counter = 0;
+        if (decrement_game_clock()) {
+            question = QUESTION_FINISHED;
+            clock_digits[0] = 0;
+            clock_digits[1] = 0;
+            game_state = GAME_STATE_FINISHED;
+        }
+    }
+}
+
+
+int8_t check_collisions(struct point *uv, uint8_t robot_id)
+{
+    static struct rect r;
+    static uint8_t i;
+
+    r.w = ROBOT_HITBOX * 2;
+    r.h = ROBOT_HITBOX * 2;
+    r.x = robots[1 - robot_id].position.x - ROBOT_HITBOX;
+    r.y = robots[1 - robot_id].position.y - ROBOT_HITBOX;
+
+    // Out of table
+    if ((uv->x & 0x80) || (uv->y & 0x80) || (uv->x > TABLE_EDGE_U) || (uv->y > TABLE_EDGE_V)) {
+        return COLLISION_OUT_OF_TABLE;
+    }
+
+    // Robot collision
+    if (rect_contains(&r, uv)) {
+        return COLLISION_OTHER_ROBOT;
+    }
+
+    // Obstacle collision
+    for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
+        if (rect_contains(&obstacles[i], uv) && (obstacle_stone_quantity[i] != 0)) {
+            return COLLISION_OBSTACLE_START + i;
+        }
+    }
+
+    return COLLISION_NOTHING;
+}
+
+
+int8_t check_mining_interaction(struct point *uv)
+{
+    static uint8_t i;
+
+    for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
+        if (rect_contains(&obstacles[i], uv)) {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+
+void displace_robot(struct point *destination, uint8_t robot_id, int8_t increment)
+{
+    destination->x = robots[robot_id].position.x;
+    destination->y = robots[robot_id].position.y;
+
+    switch (robots[robot_id].orientation) {
+        case ORIENTATION_EAST:
+        destination->x += increment;
+        return;
+
+        case ORIENTATION_WEST:
+        destination->x -= increment;
+        return;
+
+        case ORIENTATION_SOUTH:
+        destination->y += increment;
+        return;
+
+        case ORIENTATION_NORTH:
+        destination->y -= increment;
+        return;
+    }
+}
+
+
+void manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
+{
+    static uint8_t obstacle_type, player_id;
+
+    obstacle_type = obstacle_flags[obstacle_id] & OBSTACLE_FLAG_TYPE;
+    player_id = obstacle_flags[obstacle_id] & OBSTACLE_FLAG_PLAYER_ID;
+
+    // Mining situation
+    if ((obstacle_type == OBSTACLE_TYPE_QUARRY) || (player_id != robot_id)) {
+        if (obstacle_stone_quantity[obstacle_id] > 0 && robots[robot_id].carried_stones < 3) {
+            obstacle_stone_quantity[obstacle_id]--;
+            robots[robot_id].carried_stones++;
+
+            update_obstacle_sprite(obstacle_id);
+        }
+    }
+
+    // Construction situation
+    if (player_id == robot_id) {
+        if (
+            (
+                (obstacle_type == OBSTACLE_TYPE_WALL)
+                && (robots[robot_id].carried_stones > 0)
+                && (obstacle_stone_quantity[obstacle_id] < 3)
+            )
+            || (
+                (obstacle_type == OBSTACLE_TYPE_TOWER)
+                && (robots[robot_id].carried_stones > 0 && obstacle_stone_quantity[obstacle_id] < 1)
+            )
+        ) {
+            obstacle_stone_quantity[obstacle_id]++;
+            robots[robot_id].carried_stones--;
+
+            update_obstacle_sprite(obstacle_id);
+        }
+    }
+}
