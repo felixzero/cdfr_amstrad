@@ -54,10 +54,6 @@ if __name__ == "__main__":
 
     query_server({"cmd": "halt"})
     
-    with open(args.code, "rb") as f:
-        code = f.read()
-    write_block(code, code_location)
-
     with open(args.background, "rb") as f:
         background = f.read()
     write_block(background, background_location)
@@ -65,11 +61,14 @@ if __name__ == "__main__":
     with open(args.initialized, "rb") as f:
         initialized = f.read()
     write_block(initialized, initialized_location)
+
+    with open(args.code, "rb") as f:
+        code = f.read()
+    write_block(code, code_location)
     
     query_server({
         "cmd": "setRegisters",
-        "pc": code_location,
-        "sp": 0xBFFF
+        "pc": initialized_location
     })
     query_server({"cmd": "continue"})
     

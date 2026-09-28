@@ -1,9 +1,9 @@
 PGM_NAME=cdfr
 
 CODE_LOC=2800
-MAIN_CODE_LOC=2810
+INIT_LOC=8000
 DATA_LOC=0100
-INITIALIZED_LOC=8000
+INITIALIZED_DATA_LOC=8010
 BACKGROUND_LOC=4000
 
 MAX_CODE_SIZE=6144
@@ -13,7 +13,7 @@ ASM=sdasz80
 ASMFLAGS=
 CC=sdcc
 CCFLAGS=-mz80 -Ibuild/
-LDFLAGS=-mz80 --code-loc 0x$(MAIN_CODE_LOC) --data-loc 0x$(DATA_LOC) -Wl-b_INITIALIZED=0x$(INITIALIZED_LOC) -Wl-b_INIT=0x$(CODE_LOC) --no-std-crt0
+LDFLAGS=-mz80 --code-loc 0x$(CODE_LOC) --data-loc 0x$(DATA_LOC) -Wl-b_INITIALIZED=0x$(INITIALIZED_DATA_LOC) -Wl-b_INIT=0x$(INIT_LOC) --no-std-crt0
 EMULATOR=/opt/AceDL/AceDL
 
 ASM_OBJS= \
@@ -85,15 +85,15 @@ build/$(PGM_NAME).ihx: $(ASM_OBJS) $(C_OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 build/code.bin: build/$(PGM_NAME).ihx
-	python tools/ihx_to_bin.py -c $(CODE_LOC) -d $(INITIALIZED_LOC) -o $@ $<
+	python tools/ihx_to_bin.py -c $(CODE_LOC) -d $(INIT_LOC) -o $@ $<
 	@if [ `stat -c %s build/initialized.bin` -ge $(MAX_INITIALIZED_SIZE) ]; then echo "Error: init BIN file too large"; exit 1; fi
 	@if [ `stat -c %s build/code.bin` -ge $(MAX_CODE_SIZE) ]; then echo "Error: code BIN file too large"; exit 1; fi
 
 build/loader_%.bas: loaders/%.bas
-	sed -e 's/%code/$(CODE_LOC)/' -e 's/%init/$(INITIALIZED_LOC)/' -e 's/%backgnd/$(BACKGROUND_LOC)/' $< > $@
+	sed -e 's/%code/$(CODE_LOC)/' -e 's/%init/$(INIT_LOC)/' -e 's/%backgnd/$(BACKGROUND_LOC)/' $< > $@
 
 dist/$(PGM_NAME).dsk: build/code.bin $(BACKGROUND_OBJ) build/loader_disk.bas
-	python tools/bin_to_dsk.py -c $(CODE_LOC) -b $(BACKGROUND_LOC) -d $(INITIALIZED_LOC) \
+	python tools/bin_to_dsk.py -c $(CODE_LOC) -b $(BACKGROUND_LOC) -d $(INIT_LOC) \
 		--code build/code.bin --background build/background.scr --initialized build/initialized.bin \
 		--basic-loader build/loader_disk.bas -o $@
 
@@ -106,7 +106,7 @@ dist/$(PGM_NAME).cdt: build/code.bin $(BACKGROUND_OBJ) build/loader_tape.bas
 play: build/code.bin $(BACKGROUND_OBJ)
 	$(EMULATOR) -enable_webapi -web_port 6128 &
 	sleep 2
-	python tools/load_to_emulator.py -c $(CODE_LOC) -b $(BACKGROUND_LOC) -d $(INITIALIZED_LOC) \
+	python tools/load_to_emulator.py -c $(CODE_LOC) -b $(BACKGROUND_LOC) -d $(INIT_LOC) \
 		 --code build/code.bin --background build/background.scr --initialized build/initialized.bin
 
 playdisk: dist/$(PGM_NAME).dsk

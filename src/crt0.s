@@ -4,8 +4,14 @@
 .area _DATA
 
 .area _INIT (ABS)
-    ld sp, #0xBFFF
+    ; No interrupts
     di
+    ; Debank ROM, if needed
+    ld bc, #0x7F8C
+    out (c), c
+    ; Stack pointer at top of usable memory
+    ld sp, #0xBFFF
+    ; Run program
     call _main
 
 .area _CODE
