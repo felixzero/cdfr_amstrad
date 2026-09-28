@@ -18,13 +18,13 @@ static const struct rect right_digit_rect = {
 
 static const struct rect players_action_rect[] = {
     {
-        .x = 32,
+        .x = 34,
         .y = 5,
         .w = ASSET_WORD_MINE_WIDTH,
         .h = ASSET_WORD_MINE_HEIGHT
     },
     {
-        .x = 134,
+        .x = 136,
         .y = 169,
         .w = ASSET_WORD_MINE_WIDTH,
         .h = ASSET_WORD_MINE_HEIGHT

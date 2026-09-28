@@ -12,6 +12,12 @@ enum {
     GAME_STATE_FINISHED
 };
 
+enum {
+    MINING_INTERACTION_NONE,
+    MINING_INTERACTION_MINE,
+    MINING_INTERACTION_BUILD
+};
+
 static uint8_t game_state;
 
 static void update_controller_init(void);
@@ -102,7 +108,7 @@ static void update_controller_321(void)
     if (frame_count >= COUNT_DOWN_DELAY) {
         if (decrement_game_clock()) {
             question = QUESTION_NONE;
-            clock_digits[0] = 1;
+            clock_digits[0] = 9;
             clock_digits[1] = 0;
 
             game_state = GAME_STATE_PLAY;
@@ -122,11 +128,34 @@ static void update_controller_play(void)
     static struct point p;
     static uint8_t frame_counter = 0;
     static bool change_orientation;
+    static int8_t obstacle_id;
+    static uint8_t mining_interaction;
 
     change_orientation = false;
     keys = get_keypress();
 
     for (i = 0; i < 2; ++i) {
+        mining_interaction = MINING_INTERACTION_NONE;
+        displace_robot(&p, i, ROBOT_MINING_DISTANCE);
+        obstacle_id = check_mining_interaction(&p);
+        if (obstacle_id >= 0) {
+            mining_interaction = manage_mining_interaction(obstacle_id, i);
+
+            switch (mining_interaction) {
+                case MINING_INTERACTION_MINE:
+                user_messages[i] = PLAYER_MESSAGE_MINE;
+                break;
+
+                case MINING_INTERACTION_BUILD:
+                user_messages[i] = PLAYER_MESSAGE_BUILD;
+                break;
+
+                default:
+                user_messages[i] = PLAYER_MESSAGE_NONE;
+                break;
+            }
+        }
+
         if (!(keys & robots[i].control_keys[CONTROL_KEY_RIGHT])) {
             if (robots[i].action_timer == 0) {
                 robots[i].orientation++;
@@ -152,15 +181,23 @@ static void update_controller_play(void)
                 robots[i].position.y = p.y;
             }
         } else if (!(keys & robots[i].control_keys[CONTROL_KEY_ACTION])) {
-            displace_robot(&p, i, ROBOT_MINING_DISTANCE);
-            int8_t obstacle_id = check_mining_interaction(&p);
-            if (obstacle_id >= 0) {
-                if ((robots[i].action_timer == MINING_TIMER_OUT)) {
-                    manage_mining_interaction(obstacle_id, i);
-                    robots[i].action_timer = 0;
-                } else {
-                    robots[i].action_timer++;
+            if ((robots[i].action_timer == MINING_TIMER_OUT)) {
+                switch (mining_interaction) {
+                    case MINING_INTERACTION_MINE:
+                    obstacle_stone_quantity[obstacle_id]--;
+                    robots[i].carried_stones++;
+                    update_obstacle_sprite(obstacle_id);
+                    break;
+
+                    case MINING_INTERACTION_BUILD:
+                    obstacle_stone_quantity[obstacle_id]++;
+                    robots[i].carried_stones--;
+                    update_obstacle_sprite(obstacle_id);
+                    break;
                 }
+                robots[i].action_timer = 0;
+            } else {
+                robots[i].action_timer++;
             }
         } else {
             robots[i].action_timer = 0;
@@ -253,7 +290,7 @@ void displace_robot(struct point *destination, uint8_t robot_id, int8_t incremen
 }
 
 
-void manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
+uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
 {
     static uint8_t obstacle_type, player_id;
 
@@ -263,10 +300,7 @@ void manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
     // Mining situation
     if ((obstacle_type == OBSTACLE_TYPE_QUARRY) || (player_id != robot_id)) {
         if (obstacle_stone_quantity[obstacle_id] > 0 && robots[robot_id].carried_stones < 3) {
-            obstacle_stone_quantity[obstacle_id]--;
-            robots[robot_id].carried_stones++;
-
-            update_obstacle_sprite(obstacle_id);
+            return MINING_INTERACTION_MINE;
         }
     }
 
@@ -283,10 +317,9 @@ void manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
                 && (robots[robot_id].carried_stones > 0 && obstacle_stone_quantity[obstacle_id] < 1)
             )
         ) {
-            obstacle_stone_quantity[obstacle_id]++;
-            robots[robot_id].carried_stones--;
-
-            update_obstacle_sprite(obstacle_id);
+            return MINING_INTERACTION_BUILD;
         }
     }
+
+    return MINING_INTERACTION_NONE;
 }
