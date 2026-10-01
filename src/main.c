@@ -42,6 +42,16 @@ __endasm;
     init_controller();
 
     while (1) {
+        __asm
+        ;rst #0x30
+        __endasm;
         update_controller();
+        __asm
+        ;nop
+        ;rst #0x30
+        __endasm;
+
+        wait_for_vsync();
+        swap_buffers();
     }
 }

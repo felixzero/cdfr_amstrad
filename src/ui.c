@@ -122,7 +122,7 @@ bool decrement_game_clock(void)
 
 void update_ui_display(void)
 {
-    static uint8_t current_buffer, i;
+    static uint8_t current_buffer, i, *current_printed_user_message, *current_printed_question;
 
     current_buffer = get_current_buffer();
 
@@ -131,27 +131,30 @@ void update_ui_display(void)
         blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 1]], &right_digit_rect);
         printed_clock_digits[2 * current_buffer + 0] = clock_digits[0];
         printed_clock_digits[2 * current_buffer + 1] = clock_digits[1];
-        blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 0]], &left_digit_rect);
-        blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 1]], &right_digit_rect);
+        blit_sprite_xor(digit_assets[clock_digits[0]], &left_digit_rect);
+        blit_sprite_xor(digit_assets[clock_digits[1]], &right_digit_rect);
     }
 
     for (i = 0; i < 2; ++i) {
-        if (printed_user_messages[2 * current_buffer + i] != user_messages[i]) {
-            if (printed_user_messages[2 * current_buffer + i]) {
-                blit_sprite_xor(user_message_lookup[printed_user_messages[2 * current_buffer + i]], players_action_rect + i);
+        current_printed_user_message = &printed_user_messages[2 * current_buffer + i];
+
+        if (*current_printed_user_message != user_messages[i]) {
+            if (*current_printed_user_message) {
+                blit_sprite_xor(user_message_lookup[*current_printed_user_message], players_action_rect + i);
             }
-            printed_user_messages[2 * current_buffer + i] = user_messages[i];
+            *current_printed_user_message = user_messages[i];
             if (user_messages[i]) {
                 blit_sprite_xor(user_message_lookup[user_messages[i]], players_action_rect + i);
             }
         }
     }
 
-    if (printed_question[current_buffer] != question) {
-        if (printed_question[current_buffer]) {
-            blit_sprite_xor(question_lookup[printed_question[current_buffer]], &question_rect);
+    current_printed_question = &printed_question[current_buffer];
+    if (*current_printed_question != question) {
+        if (*current_printed_question) {
+            blit_sprite_xor(question_lookup[*current_printed_question], &question_rect);
         }
-        printed_question[current_buffer] = question;
+        *current_printed_question = question;
         if (question) {
             blit_sprite_xor(question_lookup[question], &question_rect);
         }

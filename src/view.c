@@ -79,6 +79,7 @@ static void create_quarry_sprite(uint8_t obstacle_id)
 {
     struct rect r;
     struct point p;
+    sprite_handle_t sprite;
 
     r.w = ASSET_BLOCK_3E_WIDTH;
     r.h = ASSET_BLOCK_3E_HEIGHT;
@@ -87,12 +88,13 @@ static void create_quarry_sprite(uint8_t obstacle_id)
     game_uv_to_screen_xy((struct point*)&r, &p);
 
     if (IS_ORIENTED_EAST(obstacle_id)) {
-        obstacle_sprites[obstacle_id] = create_sprite(asset_block_3e, &r);
+        sprite = create_sprite(asset_block_3e, &r);
     } else {
-        obstacle_sprites[obstacle_id] = create_sprite(asset_block_3s, &r);
+        sprite = create_sprite(asset_block_3s, &r);
     }
-    set_sprite_z_index(obstacle_sprites[obstacle_id], r.y / 2 - QUARRY_Z_INDEX_OFFSET / 2);
-    trigger_sprite_redraw(obstacle_sprites[obstacle_id]);
+    obstacle_sprites[obstacle_id] = sprite;
+    set_sprite_z_index(sprite, r.y / 2 - QUARRY_Z_INDEX_OFFSET / 2);
+    trigger_sprite_redraw(sprite);
 
     obstacle_stone_quantity[obstacle_id] = INITIAL_NUMBER_OF_STONES;
 }
@@ -102,6 +104,7 @@ static void create_wall_sprite(uint8_t obstacle_id)
 {
     struct rect r;
     struct point p;
+    sprite_handle_t sprite;
 
     r.w = ASSET_BLOCK_3E_WIDTH;
     r.h = ASSET_BLOCK_3E_HEIGHT;
@@ -110,13 +113,14 @@ static void create_wall_sprite(uint8_t obstacle_id)
     game_uv_to_screen_xy((struct point*)&r, &p);
 
     if (IS_ORIENTED_EAST(obstacle_id)) {
-        obstacle_sprites[obstacle_id] = create_sprite(asset_block_1e, &r);
+        sprite = create_sprite(asset_block_1e, &r);
     } else {
-        obstacle_sprites[obstacle_id] = create_sprite(asset_block_1s, &r);
+        sprite = create_sprite(asset_block_1s, &r);
     }
-    set_sprite_z_index(obstacle_sprites[obstacle_id], r.y / 2 - WALL_Z_INDEX_OFFSET / 2);
-    set_sprite_visibility(obstacle_sprites[obstacle_id], false);
-    trigger_sprite_redraw(obstacle_sprites[obstacle_id]);
+    obstacle_sprites[obstacle_id] = sprite;
+    set_sprite_z_index(sprite, r.y / 2 - WALL_Z_INDEX_OFFSET / 2);
+    set_sprite_visibility(sprite, false);
+    trigger_sprite_redraw(sprite);
 
     obstacle_stone_quantity[obstacle_id] = 0;
 }
@@ -126,6 +130,7 @@ static void create_tower_sprite(uint8_t obstacle_id)
 {
     struct rect r;
     struct point p;
+    sprite_handle_t sprite;
 
     r.w = ASSET_TOWER_WIDTH;
     r.h = ASSET_TOWER_HEIGHT;
@@ -133,10 +138,11 @@ static void create_tower_sprite(uint8_t obstacle_id)
     p.y = obstacles[obstacle_id].y + TOWER_DISPLAY_OFFSET_V;
     game_uv_to_screen_xy((struct point*)&r, &p);
 
-    obstacle_sprites[obstacle_id] = create_sprite(asset_tower, &r);
-    set_sprite_z_index(obstacle_sprites[obstacle_id], r.y / 2 - WALL_Z_INDEX_OFFSET / 2);
-    set_sprite_visibility(obstacle_sprites[obstacle_id], false);
-    trigger_sprite_redraw(obstacle_sprites[obstacle_id]);
+    sprite = create_sprite(asset_tower, &r);
+    obstacle_sprites[obstacle_id] = sprite;
+    set_sprite_z_index(sprite, r.y / 2 - WALL_Z_INDEX_OFFSET / 2);
+    set_sprite_visibility(sprite, false);
+    trigger_sprite_redraw(sprite);
 
     obstacle_stone_quantity[obstacle_id] = 0;
 }
@@ -146,9 +152,6 @@ void update_view(void)
 {
     draw_sprites();
     update_ui_display();
-
-    wait_for_vsync();
-    swap_buffers();
 }
 
 
@@ -164,58 +167,65 @@ void update_obstacle_sprite(uint8_t obstacle_id)
     static bool is_oriented_east;
     static uint8_t stone_quantity;
     static uint8_t obstacle_type;
+    static sprite_handle_t obstacle_sprite;
 
     is_oriented_east = IS_ORIENTED_EAST(obstacle_id);
     stone_quantity = obstacle_stone_quantity[obstacle_id];
     obstacle_type = obstacle_flags[obstacle_id] & OBSTACLE_FLAG_TYPE;
+    obstacle_sprite = obstacle_sprites[obstacle_id];
 
     if ((obstacle_type == OBSTACLE_TYPE_QUARRY) || (obstacle_type == OBSTACLE_TYPE_WALL)) {
-        switch (obstacle_stone_quantity[obstacle_id]) {
+        switch (stone_quantity) {
             case 0:
-            set_sprite_visibility(obstacle_sprites[obstacle_id], false);
+            set_sprite_visibility(obstacle_sprite, false);
             break;
 
             case 1:
-            change_sprite_asset(obstacle_sprites[obstacle_id], is_oriented_east ? asset_block_1e : asset_block_1s);
-            set_sprite_visibility(obstacle_sprites[obstacle_id], true);
+            change_sprite_asset(obstacle_sprite, is_oriented_east ? asset_block_1e : asset_block_1s);
+            set_sprite_visibility(obstacle_sprite, true);
             break;
 
             case 2:
-            change_sprite_asset(obstacle_sprites[obstacle_id], is_oriented_east ? asset_block_2e : asset_block_2s);
-            set_sprite_visibility(obstacle_sprites[obstacle_id], true);
+            change_sprite_asset(obstacle_sprite, is_oriented_east ? asset_block_2e : asset_block_2s);
+            set_sprite_visibility(obstacle_sprite, true);
             break;
 
             case 3:
             if (obstacle_type == OBSTACLE_TYPE_QUARRY) {
-                change_sprite_asset(obstacle_sprites[obstacle_id], is_oriented_east ? asset_block_3e : asset_block_3s);
+                change_sprite_asset(obstacle_sprite, is_oriented_east ? asset_block_3e : asset_block_3s);
             } else {
-                change_sprite_asset(obstacle_sprites[obstacle_id], is_oriented_east ? asset_block_3e_built : asset_block_3s_built);
+                change_sprite_asset(obstacle_sprite, is_oriented_east ? asset_block_3e_built : asset_block_3s_built);
             }
-            set_sprite_visibility(obstacle_sprites[obstacle_id], true);
+            set_sprite_visibility(obstacle_sprite, true);
             break;
         }
     } else if (obstacle_type == OBSTACLE_TYPE_TOWER) {
-        if (obstacle_stone_quantity[obstacle_id] == 0) {
-            set_sprite_visibility(obstacle_sprites[obstacle_id], false);
+        if (stone_quantity == 0) {
+            set_sprite_visibility(obstacle_sprite, false);
         } else {
-            set_sprite_visibility(obstacle_sprites[obstacle_id], true);
+            set_sprite_visibility(obstacle_sprite, true);
         }
     }
 
-    trigger_sprite_redraw(obstacle_sprites[obstacle_id]);
+    trigger_sprite_redraw(obstacle_sprite);
 }
 
 
 void update_robot_sprite(uint8_t robot_id, bool change_orientation)
 {
     static struct point p;
+    static struct robot_view *view;
+    static struct robot_model *robot;
+
+    view = &robot_views[robot_id];
+    robot = &robots[robot_id];
 
     if (change_orientation) {
-        change_sprite_asset(robot_views[robot_id].sprite, robot_views[robot_id].sprite_assets[robots[robot_id].orientation]);
+        change_sprite_asset(view->sprite, view->sprite_assets[robot->orientation]);
     }
 
-    game_uv_to_screen_xy(&p, &robots[robot_id].position);
-    move_sprite(robot_views[robot_id].sprite, &p);
-    set_sprite_z_index(robot_views[robot_id].sprite, p.y / 2);
-    trigger_sprite_redraw(robot_views[robot_id].sprite);
+    game_uv_to_screen_xy(&p, &robot->position);
+    move_sprite(view->sprite, &p);
+    set_sprite_z_index(view->sprite, p.y / 2);
+    trigger_sprite_redraw(view->sprite);
 }

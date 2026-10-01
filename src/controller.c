@@ -80,7 +80,6 @@ static void update_controller_init(void)
 
 static void update_controller_wait_ready(void)
 {
-    static uint32_t keys;
     static uint8_t i;
 
     if (player_ready_flags == 0x03) {
@@ -92,10 +91,10 @@ static void update_controller_wait_ready(void)
         game_state = GAME_STATE_321;
     }
 
-    keys = get_keypress();
+    get_keypress();
 
     for (i = 0; i < 2; ++i) {
-        if (!(keys & robots[i].control_keys[CONTROL_KEY_ACTION])) {
+        if (is_key_pressed(i, check_key_action)) {
             player_ready_flags |= (1 << i);
             user_messages[i] = PLAYER_MESSAGE_NONE;
         }
@@ -122,7 +121,6 @@ static void update_controller_321(void)
 
 static void update_controller_play(void)
 {
-    static uint32_t keys;
     static uint8_t increment;
     static uint8_t i;
     static struct point p;
@@ -130,11 +128,14 @@ static void update_controller_play(void)
     static bool change_orientation;
     static int8_t obstacle_id;
     static uint8_t mining_interaction;
+    static struct robot_model *robot;
 
     change_orientation = false;
-    keys = get_keypress();
+    get_keypress();
 
     for (i = 0; i < 2; ++i) {
+        robot = &robots[i];
+
         mining_interaction = MINING_INTERACTION_NONE;
         displace_robot(&p, i, ROBOT_MINING_DISTANCE);
         obstacle_id = check_mining_interaction(&p);
@@ -156,51 +157,51 @@ static void update_controller_play(void)
             }
         }
 
-        if (!(keys & robots[i].control_keys[CONTROL_KEY_RIGHT])) {
-            if (robots[i].action_timer == 0) {
-                robots[i].orientation++;
-                robots[i].orientation &= 0x03;
+        if (is_key_pressed(i, check_key_right)) {
+            if (robot->action_timer == 0) {
+                robot->orientation++;
+                robot->orientation &= 0x03;
                 change_orientation = true;
             }
-            robots[i].action_timer++;
-            robots[i].action_timer &= ROTATION_TIMER_MASK;
-        } else if (!(keys & robots[i].control_keys[CONTROL_KEY_LEFT])) {
-            if (robots[i].action_timer == 0) {
-                robots[i].orientation--;
-                robots[i].orientation &= 0x03;
+            robot->action_timer++;
+            robot->action_timer &= ROTATION_TIMER_MASK;
+        } else if (is_key_pressed(i, check_key_left)) {
+            if (robot->action_timer == 0) {
+                robot->orientation--;
+                robot->orientation &= 0x03;
                 change_orientation = true;
             }
-            robots[i].action_timer++;
-            robots[i].action_timer &= ROTATION_TIMER_MASK;
-        } else if (!(keys & robots[i].control_keys[CONTROL_KEY_UP]) || !(keys & robots[i].control_keys[CONTROL_KEY_DOWN])) {
-            increment = !(keys & robots[i].control_keys[CONTROL_KEY_UP]) ? 2 : -2;
+            robot->action_timer++;
+            robot->action_timer &= ROTATION_TIMER_MASK;
+        } else if (is_key_pressed(i, check_key_up) || is_key_pressed(i, check_key_down)) {
+            increment = is_key_pressed(i, check_key_up) ? 2 : -2;
             displace_robot(&p, i, increment);
 
             if (!check_collisions(&p, i)) {
-                robots[i].position.x = p.x;
-                robots[i].position.y = p.y;
+                robot->position.x = p.x;
+                robot->position.y = p.y;
             }
-        } else if (!(keys & robots[i].control_keys[CONTROL_KEY_ACTION])) {
-            if ((robots[i].action_timer == MINING_TIMER_OUT)) {
+        } else if (is_key_pressed(i, check_key_action)) {
+            if ((robot->action_timer == MINING_TIMER_OUT)) {
                 switch (mining_interaction) {
                     case MINING_INTERACTION_MINE:
                     obstacle_stone_quantity[obstacle_id]--;
-                    robots[i].carried_stones++;
+                    robot->carried_stones++;
                     update_obstacle_sprite(obstacle_id);
                     break;
 
                     case MINING_INTERACTION_BUILD:
                     obstacle_stone_quantity[obstacle_id]++;
-                    robots[i].carried_stones--;
+                    robot->carried_stones--;
                     update_obstacle_sprite(obstacle_id);
                     break;
                 }
-                robots[i].action_timer = 0;
+                robot->action_timer = 0;
             } else {
-                robots[i].action_timer++;
+                robot->action_timer++;
             }
         } else {
-            robots[i].action_timer = 0;
+            robot->action_timer = 0;
         }
 
         update_robot_sprite(i, change_orientation);
@@ -224,11 +225,14 @@ int8_t check_collisions(struct point *uv, uint8_t robot_id)
 {
     static struct rect r;
     static uint8_t i;
+    static struct robot_model *other_robot;
+
+    other_robot = &robots[1 - robot_id];
 
     r.w = ROBOT_HITBOX * 2;
     r.h = ROBOT_HITBOX * 2;
-    r.x = robots[1 - robot_id].position.x - ROBOT_HITBOX;
-    r.y = robots[1 - robot_id].position.y - ROBOT_HITBOX;
+    r.x = other_robot->position.x - ROBOT_HITBOX;
+    r.y = other_robot->position.y - ROBOT_HITBOX;
 
     // Out of table
     if ((uv->x & 0x80) || (uv->y & 0x80) || (uv->x > TABLE_EDGE_U) || (uv->y > TABLE_EDGE_V)) {
@@ -267,10 +271,14 @@ int8_t check_mining_interaction(struct point *uv)
 
 void displace_robot(struct point *destination, uint8_t robot_id, int8_t increment)
 {
-    destination->x = robots[robot_id].position.x;
-    destination->y = robots[robot_id].position.y;
+    static struct robot_model *robot;
 
-    switch (robots[robot_id].orientation) {
+    robot = &robots[robot_id];
+
+    destination->x = robot->position.x;
+    destination->y = robot->position.y;
+
+    switch (robot->orientation) {
         case ORIENTATION_EAST:
         destination->x += increment;
         return;
@@ -293,13 +301,16 @@ void displace_robot(struct point *destination, uint8_t robot_id, int8_t incremen
 uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
 {
     static uint8_t obstacle_type, player_id;
+    static struct robot_model *robot;
+
+    robot = &robots[robot_id];
 
     obstacle_type = obstacle_flags[obstacle_id] & OBSTACLE_FLAG_TYPE;
     player_id = obstacle_flags[obstacle_id] & OBSTACLE_FLAG_PLAYER_ID;
 
     // Mining situation
     if ((obstacle_type == OBSTACLE_TYPE_QUARRY) || (player_id != robot_id)) {
-        if (obstacle_stone_quantity[obstacle_id] > 0 && robots[robot_id].carried_stones < 3) {
+        if (obstacle_stone_quantity[obstacle_id] > 0 && robot->carried_stones < 3) {
             return MINING_INTERACTION_MINE;
         }
     }
@@ -309,12 +320,12 @@ uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
         if (
             (
                 (obstacle_type == OBSTACLE_TYPE_WALL)
-                && (robots[robot_id].carried_stones > 0)
+                && (robot->carried_stones > 0)
                 && (obstacle_stone_quantity[obstacle_id] < 3)
             )
             || (
                 (obstacle_type == OBSTACLE_TYPE_TOWER)
-                && (robots[robot_id].carried_stones > 0 && obstacle_stone_quantity[obstacle_id] < 1)
+                && (robot->carried_stones > 0 && obstacle_stone_quantity[obstacle_id] < 1)
             )
         ) {
             return MINING_INTERACTION_BUILD;

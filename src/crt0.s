@@ -3,6 +3,8 @@
 
 .area _DATA
 
+.area _CODE
+
 .area _INIT (ABS)
     ; No interrupts
     di
@@ -11,8 +13,6 @@
     out (c), c
     ; Stack pointer at top of usable memory
     ld sp, #0xBFFF
-    ; Run program
-    call _main
+    jp _main
 
-.area _CODE
 .area _INITIALIZED

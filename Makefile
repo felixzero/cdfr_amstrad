@@ -3,7 +3,7 @@ PGM_NAME=cdfr
 CODE_LOC=2800
 INIT_LOC=8000
 DATA_LOC=0100
-INITIALIZED_DATA_LOC=8010
+INITIALIZED_DATA_LOC=8020
 BACKGROUND_LOC=4000
 
 MAX_CODE_SIZE=6144
@@ -21,7 +21,8 @@ ASM_OBJS= \
 	build/sprite_assets.s.rel \
 	build/graphics.s.rel \
 	build/inputs.s.rel \
-	build/rect.s.rel
+	build/rect.s.rel \
+	build/model_data.s.rel
 
 C_OBJS= \
 	build/main.c.rel \

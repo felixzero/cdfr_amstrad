@@ -34,7 +34,7 @@ if __name__ == "__main__":
                 continue
             
             if start_addr < min(code_location, initialized_location):
-                print("Error: segment outside of range: 0x%x" % abs_start_addr)
+                print("Error: segment outside of range: 0x%x" % start_addr)
                 exit(1)
             
             if len(raw_binary_data) < start_addr + size:

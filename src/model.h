@@ -48,10 +48,9 @@ struct robot_model {
     uint8_t orientation;
     uint8_t carried_stones;
     uint8_t action_timer;
-    uint32_t control_keys[5];
 };
 
-extern const struct rect obstacles[];
+extern const struct rect obstacles[NUMBER_OF_OBSTACLES];
 extern const uint8_t obstacle_flags[NUMBER_OF_OBSTACLES];
 extern uint8_t obstacle_stone_quantity[NUMBER_OF_OBSTACLES];
 extern struct robot_model robots[2];
