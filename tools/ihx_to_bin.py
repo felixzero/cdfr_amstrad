@@ -2,24 +2,19 @@ import struct
 import argparse
 import math
 
-NUMBER_OF_TRACKS = 40
-NUMBER_OF_SECTOR_PER_TRACK = 9
-SECTOR_SIZE_BYTES = 512
-GAP3_LENGTH = 0x2A
-HEADER_BLOCK_SIZE = 0x100
-SIDE_ID = 0
-SECTOR_ORDERING = [0, 5, 1, 6, 2, 7, 3, 8, 4]
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("ihx_to_bin.py", description="Convert an Intel HEX output compiled file to an Amstrad BIN file")
     parser.add_argument("input")
-    parser.add_argument("-c", "--code-location", default="0x8000")
-    parser.add_argument("-d", "--initialized-location", default="0x9600")
+    parser.add_argument("-c", "--code-location", required=True)
+    parser.add_argument("-d", "--initialized-location")
     parser.add_argument("-o", "--output", required=True)
 
     args = parser.parse_args()
     code_location = int(args.code_location, base=16)
-    initialized_location = int(args.initialized_location, base=16)
+    if args.initialized_location is not None:
+        initialized_location = int(args.initialized_location, base=16)
+    else:
+        initialized_location = 0
 
     raw_binary_data = bytearray()
     with open(args.input, "r") as f:
@@ -43,10 +38,14 @@ if __name__ == "__main__":
             raw_binary_data[start_addr:start_addr + size] = data
     
     with open(args.output, "wb") as f_code:
+        if code_location < initialized_location:
+            f_code.write(raw_binary_data[code_location:initialized_location].strip(b"\x00"))
+        else:
+            f_code.write(raw_binary_data[code_location:])
+
+    if args.initialized_location is not None:
         with open("build/initialized.bin", "wb") as f_init:
             if code_location < initialized_location:
-                f_code.write(raw_binary_data[code_location:initialized_location].strip(b"\x00"))
                 f_init.write(raw_binary_data[initialized_location:])
             else:
-                f_code.write(raw_binary_data[code_location:])
                 f_init.write(raw_binary_data[initialized_location:code_location])

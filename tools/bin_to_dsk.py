@@ -172,4 +172,8 @@ if __name__ == "__main__":
         raw_binary_data += b"\x1A"
         manager.add_file("CDFR", "BAS", raw_binary_data, 0, binary=False)
 
+    with open("build/loader.bin", "rb") as f:
+        raw_binary_data = f.read()
+    manager.add_file("LOADER", "BIN", raw_binary_data, 0xA600)
+
     manager.write_to_file(args.output)

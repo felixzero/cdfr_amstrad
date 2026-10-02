@@ -4,6 +4,7 @@
 #include "sprite_assets.h"
 #include <string.h>
 #include <stddef.h>
+#include <assert.h>
 
 #define STATUS_DISPLAYED_BIT 0
 #define STATUS_NEED_REDRAW_BIT 1
@@ -12,12 +13,6 @@
 #define STATUS_DISPLAYED_FLAG   (1 << STATUS_DISPLAYED_BIT)
 #define STATUS_NEED_REDRAW_FLAG (1 << STATUS_NEED_REDRAW_BIT)
 #define STATUS_GRAPHICS_CHANGED (1 << STATUS_GRAPHICS_CHANGED_BIT)
-
-#define BUFFER_HEAP_SIZE ( \
-    2 * ASSET_ROBOT_2E_WIDTH * ASSET_ROBOT_2E_HEIGHT \
-    + 20 * ASSET_BLOCK_3E_WIDTH * ASSET_BLOCK_3E_HEIGHT \
-    + 8 * ASSET_TOWER_WIDTH * ASSET_TOWER_HEIGHT \
-)
 
 struct blitted_sprite {
     struct rect rect;
@@ -56,7 +51,8 @@ static struct screen_history history[NUMBER_OF_BUFFERS];
 static sprite_handle_t requested_blit_order[MAX_NUMBER_OF_SPRITES];
 static uint8_t number_of_sprites = 0;
 
-uint8_t buffer_heap[BUFFER_HEAP_SIZE];
+#define BUFFER_HEAP_FB1 ((uint8_t*)(0x4000 - FB_BUFFER_HEAP_SIZE))
+#define BUFFER_HEAP_FB2 ((uint8_t*)(0xC000 - FB_BUFFER_HEAP_SIZE))
 static uint16_t allocated_size = 0;
 
 sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect)
@@ -76,14 +72,15 @@ sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect)
 
         memset(blit, 0, sizeof(struct blitted_sprite));
         blit->status |= STATUS_GRAPHICS_CHANGED;
-        blit->screen_backup = buffer_heap + allocated_size;
+        blit->screen_backup = (i == 0) ? BUFFER_HEAP_FB1 + allocated_size : BUFFER_HEAP_FB2 + allocated_size;
         blit->rect.w = rect->w;
         blit->rect.h = rect->h;
-        allocated_size += requested_sprites[number_of_sprites].size;
         history[i].blit_order[number_of_sprites] = number_of_sprites;
     }
+    allocated_size += requested_sprites[number_of_sprites].size;
 
     requested_blit_order[number_of_sprites] = number_of_sprites;
+
     return number_of_sprites++;
 }
 

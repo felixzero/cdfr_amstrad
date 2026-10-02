@@ -1,19 +1,23 @@
 PGM_NAME=cdfr
 
-CODE_LOC=2800
+CODE_LOC=0100
 INIT_LOC=8000
-DATA_LOC=0100
-INITIALIZED_DATA_LOC=8020
+DATA_LOC=A700
+INITIALIZED_DATA_LOC=8000
+TRUE_INITIALIZED_DATA_LOC=8020
 BACKGROUND_LOC=4000
+ASM_LOADER_LOC=A600
+FB_BUFFER_HEAP_SIZE=0x1200
 
-MAX_CODE_SIZE=6144
-MAX_INITIALIZED_SIZE=9984
+MAX_CODE_SIZE=11520
+MAX_INITIALIZED_SIZE=9952
 
 ASM=sdasz80
 ASMFLAGS=
 CC=sdcc
-CCFLAGS=-mz80 -Ibuild/
-LDFLAGS=-mz80 --code-loc 0x$(CODE_LOC) --data-loc 0x$(DATA_LOC) -Wl-b_INITIALIZED=0x$(INITIALIZED_DATA_LOC) -Wl-b_INIT=0x$(INIT_LOC) --no-std-crt0
+CCFLAGS=-mz80 -Ibuild/ -DFB_BUFFER_HEAP_SIZE=$(FB_BUFFER_HEAP_SIZE)
+LDFLAGS=-mz80 --code-loc 0x$(CODE_LOC) --data-loc 0x$(DATA_LOC) \
+	-Wl-b_INITIALIZED=0x$(TRUE_INITIALIZED_DATA_LOC) -Wl-b_INIT=0x$(INITIALIZED_DATA_LOC) --no-std-crt0
 EMULATOR=/opt/AceDL/AceDL
 
 ASM_OBJS= \
@@ -94,16 +98,25 @@ build/code.bin: build/$(PGM_NAME).ihx
 	@if [ `stat -c %s build/initialized.bin` -ge $(MAX_INITIALIZED_SIZE) ]; then echo "Error: init BIN file too large"; exit 1; fi
 	@if [ `stat -c %s build/code.bin` -ge $(MAX_CODE_SIZE) ]; then echo "Error: code BIN file too large"; exit 1; fi
 
-build/loader_%.bas: loaders/%.bas
-	sed -e 's/%code/$(CODE_LOC)/' -e 's/%init/$(INIT_LOC)/' -e 's/%backgnd/$(BACKGROUND_LOC)/' $< > $@
+build/loader.ihx: loaders/loader.s
+	$(ASM) $(ASMFLAGS) -o build/loader.s.rel loaders/loader.s
+	$(CC) -mz80 --code-loc 0x$(ASM_LOADER_LOC) \
+		-Wl-g_bg_dest_addr=0x$(BACKGROUND_LOC) -Wl-g_code_dest_addr=0x$(CODE_LOC) -Wl-g_init_dest_addr=0x$(INIT_LOC) \
+		--no-std-crt0 build/loader.s.rel -o $@
 
-dist/$(PGM_NAME).dsk: build/code.bin $(BACKGROUND_OBJ) build/loader_disk.bas
+build/loader.bin: build/loader.ihx
+	python tools/ihx_to_bin.py --code-loc $(ASM_LOADER_LOC) -o $@ $<
+
+build/loader.bas: loaders/loader.bas
+	sed -e 's/%addr/$(ASM_LOADER_LOC)/' $< > $@
+
+dist/$(PGM_NAME).dsk: build/code.bin $(BACKGROUND_OBJ) build/loader.bas build/loader.bin
 	python tools/bin_to_dsk.py -c $(CODE_LOC) -b $(BACKGROUND_LOC) -d $(INIT_LOC) \
 		--code build/code.bin --background build/background.scr --initialized build/initialized.bin \
-		--basic-loader build/loader_disk.bas -o $@
+		--basic-loader build/loader.bas -o $@
 
-dist/$(PGM_NAME).cdt: build/code.bin $(BACKGROUND_OBJ) build/loader_tape.bas
-	tools/2cdt -s 0 -n build/loader_tape.bas -t 0 -r CDFR.BAS -F 22 $@
+dist/$(PGM_NAME).cdt: build/code.bin $(BACKGROUND_OBJ) build/loader.bas
+	tools/2cdt -s 0 -n build/loader.bas -t 0 -r CDFR.BAS -F 22 $@
 	tools/2cdt -s 0 $(BACKGROUND_OBJ) -t 0 -r BACKGND.BIN $@
 	tools/2cdt -s 0 build/code.bin -t 0 -r CODE.BIN $@
 	tools/2cdt -s 0 build/initialized.bin -t 0 -r INIT.BIN $@

@@ -11,8 +11,6 @@
     ; Debank ROM, if needed
     ld bc, #0x7F8C
     out (c), c
-    ; Stack pointer at top of usable memory
-    ld sp, #0xBFFF
     jp _main
 
 .area _INITIALIZED

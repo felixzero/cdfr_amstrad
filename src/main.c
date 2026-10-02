@@ -6,8 +6,11 @@
 
 main()
 {
-    // Set mode 0 and black border
 __asm
+    ; Stack pointer at top of usable memory
+    ld sp, #(0xBFFF - FB_BUFFER_HEAP_SIZE)
+
+    ; Set mode 0 and black border
     ld bc, #0x7F8C
     out (c), c
 

@@ -33,9 +33,9 @@ if __name__ == "__main__":
     parser.add_argument("--code", required=True)
     parser.add_argument("--initialized", required=True)
     parser.add_argument("--background", required=True)
-    parser.add_argument("-c", "--code-location", default="0x8000")
-    parser.add_argument("-b", "--background-location", default="0x4000")
-    parser.add_argument("-d", "--initialized-location", default="0x9600")
+    parser.add_argument("-c", "--code-location", required=True)
+    parser.add_argument("-b", "--background-location", required=True)
+    parser.add_argument("-d", "--initialized-location", required=True)
 
     args = parser.parse_args()
     code_location = int(args.code_location, base=16)
