@@ -26,7 +26,8 @@ ASM_OBJS= \
 	build/graphics.s.rel \
 	build/inputs.s.rel \
 	build/rect.s.rel \
-	build/model_data.s.rel
+	build/model_data.s.rel \
+	build/font.s.rel
 
 C_OBJS= \
 	build/main.c.rel \
@@ -34,7 +35,9 @@ C_OBJS= \
 	build/model.c.rel \
 	build/view.c.rel \
 	build/controller.c.rel \
-	build/ui.c.rel
+	build/ui.c.rel \
+	build/print.c.rel \
+	build/score.c.rel
 
 BACKGROUND_OBJ=build/background.scr
 
@@ -71,7 +74,8 @@ SPRITE_ASSETS= \
 	artworks/word_ready.png \
 	artworks/question_ready.png \
 	artworks/question_will_start.png \
-	artworks/question_finished.png
+	artworks/question_finished.png \
+	artworks/logo.png
 
 all: dist/$(PGM_NAME).dsk dist/$(PGM_NAME).cdt
 

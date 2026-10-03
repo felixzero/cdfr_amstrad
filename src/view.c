@@ -27,6 +27,8 @@ void init_view(void)
     struct point p;
     struct rect r;
 
+    init_sprite_system();
+
     memset(&robot_views, 0, 2 * sizeof(struct robot_view));
 
     robot_views[0].sprite_assets[ORIENTATION_EAST] = asset_robot_1e;
@@ -228,4 +230,24 @@ void update_robot_sprite(uint8_t robot_id, bool change_orientation)
     move_sprite(view->sprite, &p);
     set_sprite_z_index(view->sprite, p.y / 2);
     trigger_sprite_redraw(view->sprite);
+}
+
+void clear_view(void)
+{
+    static uint8_t i;
+    for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
+        set_sprite_visibility(obstacle_sprites[i], false);
+        trigger_sprite_redraw(obstacle_sprites[i]);
+    }
+    set_sprite_visibility(robot_views[0].sprite, false);
+    set_sprite_visibility(robot_views[1].sprite, false);
+
+    swap_buffers();
+    draw_sprites();
+    swap_buffers();
+    draw_sprites();
+
+    clear_ui_elements();
+
+    set_double_buffering(false);
 }

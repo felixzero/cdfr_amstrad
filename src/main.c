@@ -3,8 +3,12 @@
 #include "graphics.h"
 #include "inputs.h"
 #include "controller.h"
+#include "print.h"
+#include "sprite_assets.h"
 
-main()
+void display_title_screen(void);
+
+void main()
 {
 __asm
     ; Stack pointer at top of usable memory
@@ -38,23 +42,66 @@ __endasm;
     set_palette(14, AMS_COLOR_LYELLOW);
     set_palette(15, AMS_COLOR_WHITE);
 
-    // Copy background to video ram
-    memcpy((void*)0xC000, (void*)0x4000, 0x4000);
-    swap_buffers();
-
+    display_title_screen();
     init_controller();
 
     while (1) {
-        __asm
-        ;rst #0x30
-        __endasm;
         update_controller();
-        __asm
-        ;nop
-        ;rst #0x30
-        __endasm;
 
         wait_for_vsync();
         swap_buffers();
+    }
+}
+
+void display_title_screen(void)
+{
+    static uint8_t *screen, i;
+    static struct rect r;
+
+    set_double_buffering(false);
+
+    memset(VIDEO_RAM_START, 0xC0, 0x4000);
+    set_text_palette(15, 1);
+    move_cursor(3, 15);
+    prints("The legend of Camelot");
+    move_cursor(6, 17);
+    prints("Coupe de France");
+    move_cursor(7, 18);
+    prints("de robotique");
+    move_cursor(4, 20);
+    prints("Un jeu non officiel");
+    move_cursor(6, 21);
+    prints("par les ESCROCS");
+    move_cursor(20, 22);
+    prints("2026");
+    move_cursor(4, 23);
+    prints("Appuyez sur A");
+    move_cursor(4, 24);
+    prints("pour commencer");
+
+    screen = VIDEO_RAM_START;
+    while (screen >= VIDEO_RAM_START) {
+
+        for (int i = 0; i < 25; ++i) {
+            *(screen + 80 * i) = 0xF3;
+            *(screen + 80 * i + 2) = 0xF3;
+            *(screen + 80 * i + 79) = 0xF3;
+            *(screen + 80 * i + 77) = 0xF3;
+        }
+        screen += 0x0800;
+    }
+
+    r.w = ASSET_LOGO_WIDTH;
+    r.h = ASSET_LOGO_HEIGHT;
+    r.x = 57;
+    r.y = 40;
+    blit_sprite_xor(asset_logo, &r);
+
+    while (1) {
+        get_keypress();
+        if (is_key_pressed(0, check_key_action)) {
+            set_double_buffering(true);
+            return;
+        }
     }
 }

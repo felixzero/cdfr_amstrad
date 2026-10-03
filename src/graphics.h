@@ -6,8 +6,13 @@
 
 #define NUMBER_OF_BUFFERS 2
 
+#define VIDEO_RAM_START ((char*)0xC000)
+
 // Block execution until the beginning of VSync
 void swap_buffers(void);
+
+// Configure the display into double buffering or single buffering
+void set_double_buffering(bool enabled);
 
 // Swap the currently displayed buffer with the work buffer
 void wait_for_vsync(void);

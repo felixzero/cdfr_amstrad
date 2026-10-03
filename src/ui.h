@@ -22,6 +22,7 @@ enum {
 void init_ui(void);
 bool decrement_game_clock(void);
 void update_ui_display(void);
+void clear_ui_elements(void);
 
 extern uint8_t user_messages[2];
 extern uint8_t question;

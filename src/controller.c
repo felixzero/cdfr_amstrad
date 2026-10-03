@@ -3,6 +3,10 @@
 #include "view.h"
 #include "inputs.h"
 #include "ui.h"
+#include "print.h"
+#include "score.h"
+
+#include <string.h>
 
 enum {
     GAME_STATE_INIT,
@@ -24,11 +28,16 @@ static void update_controller_init(void);
 static void update_controller_wait_ready(void);
 static void update_controller_321(void);
 static void update_controller_play(void);
+static void update_controller_finished(void);
 
 static uint8_t frame_count, player_ready_flags;
 
 void init_controller(void)
 {
+    // Copy background to video ram
+    memcpy(VIDEO_RAM_START, (void*)0x4000, 0x4000);
+    swap_buffers();
+
     game_state = GAME_STATE_INIT;
     frame_count = 0;
     player_ready_flags = 0;
@@ -58,6 +67,7 @@ void update_controller(void)
         break;
 
         case GAME_STATE_FINISHED:
+        update_controller_finished();
         break;
     }
     update_view();
@@ -108,7 +118,7 @@ static void update_controller_321(void)
         if (decrement_game_clock()) {
             question = QUESTION_NONE;
             clock_digits[0] = 9;
-            clock_digits[1] = 0;
+            clock_digits[1] = 9;
 
             game_state = GAME_STATE_PLAY;
         }
@@ -116,6 +126,21 @@ static void update_controller_321(void)
     }
 
     frame_count++;
+}
+
+static void update_controller_finished(void)
+{
+    display_scores();
+
+    while (true) {
+        get_keypress();
+        if (is_key_pressed(0, check_key_action)) {
+            // Restart the game, the violent way
+            __asm
+            jp _init
+            __endasm;
+        }
+    }
 }
 
 
@@ -212,9 +237,10 @@ static void update_controller_play(void)
     if (frame_counter >= FRAME_PER_SECONDS) {
         frame_counter = 0;
         if (decrement_game_clock()) {
-            question = QUESTION_FINISHED;
+            //question = QUESTION_FINISHED;
             clock_digits[0] = 0;
             clock_digits[1] = 0;
+            frame_counter = 0;
             game_state = GAME_STATE_FINISHED;
         }
     }
@@ -334,3 +360,4 @@ uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
 
     return MINING_INTERACTION_NONE;
 }
+

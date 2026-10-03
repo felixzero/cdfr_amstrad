@@ -24,3 +24,6 @@ void update_view(void);
 void update_obstacle_sprite(uint8_t obstacle_id);
 
 void update_robot_sprite(uint8_t robot_id, bool change_orientation);
+
+// Remove all sprites and UI elements, and return to single buffer operation
+void clear_view(void);

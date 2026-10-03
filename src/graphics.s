@@ -1,5 +1,6 @@
 .globl _wait_for_vsync
 .globl _swap_buffers
+.globl _set_double_buffering
 .globl _set_palette
 .globl _blit_sprite_xor
 .globl _blit_sprite_swap
@@ -51,6 +52,29 @@ _swap_buffers:
     out (c), a
 
     ret
+
+; Configure the display into double buffering or single buffering
+; Args: enabled (in A)
+; Ret: -
+; Modified: -
+_set_double_buffering:
+    or a
+    jr NZ, double$
+
+    ; Both work and display buffers are in C000
+    ld bc, #CRTC_REG_SCROLL
+    out (c), c
+    ld a, #BUFFER_4000
+    ld (#current_buffer), a
+    xor a, #BUFFER_SWAP_XOR_MASK
+    inc b
+    out (c), a
+    ret
+
+double$:
+    ; swap_buffers restores the default double-buffering behavior
+    jp _swap_buffers
+
 
 
 ; Pick an indexed color as a palette element

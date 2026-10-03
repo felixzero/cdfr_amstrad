@@ -6,6 +6,9 @@
 
 typedef uint8_t sprite_handle_t;
 
+// Init or reset the sprite system
+void init_sprite_system(void);
+
 // Register a new sprite, setting graphics, size and position
 sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect);
 

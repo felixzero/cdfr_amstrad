@@ -160,3 +160,40 @@ void update_ui_display(void)
         }
     }
 }
+
+void clear_ui_elements(void)
+{
+    static uint8_t current_buffer, i, *current_printed_user_message, *current_printed_question;
+
+    current_buffer = get_current_buffer();
+    current_printed_question = &printed_question[current_buffer];
+
+    blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 0]], &left_digit_rect);
+    blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 1]], &right_digit_rect);
+    for (i = 0; i < 2; ++i) {
+        current_printed_user_message = &printed_user_messages[2 * current_buffer + i];
+        if (*current_printed_user_message != PLAYER_MESSAGE_NONE) {
+            blit_sprite_xor(user_message_lookup[*current_printed_user_message], players_action_rect + i);
+        }
+    }
+    if (*current_printed_question) {
+        blit_sprite_xor(question_lookup[*current_printed_question], &question_rect);
+    }
+
+    swap_buffers();
+    current_buffer = 1 - current_buffer;
+
+    blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 0]], &left_digit_rect);
+    blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 1]], &right_digit_rect);
+    for (i = 0; i < 2; ++i) {
+        current_printed_user_message = &printed_user_messages[2 * current_buffer + i];
+        if (*current_printed_user_message != PLAYER_MESSAGE_NONE) {
+            blit_sprite_xor(user_message_lookup[*current_printed_user_message], players_action_rect + i);
+        }
+    }
+    if (*current_printed_question) {
+        blit_sprite_xor(question_lookup[*current_printed_question], &question_rect);
+    }
+
+    swap_buffers();
+}
