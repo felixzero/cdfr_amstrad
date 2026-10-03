@@ -5,7 +5,7 @@
 ; Taken from https://github.com/petabyt/font
 ; MIT license
 
-.area _INITIALIZED
+.area _CODE_ASSETS
 
 _font_glyphs:
 code_A:

@@ -54,5 +54,3 @@ extern const struct rect obstacles[NUMBER_OF_OBSTACLES];
 extern const uint8_t obstacle_flags[NUMBER_OF_OBSTACLES];
 extern uint8_t obstacle_stone_quantity[NUMBER_OF_OBSTACLES];
 extern struct robot_model robots[2];
-
-void init_model(void);

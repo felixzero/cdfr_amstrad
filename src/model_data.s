@@ -3,7 +3,7 @@
 
 NUMBER_OF_OBSTACLES = 20
 
-.area _INITIALIZED
+.area _CODE_ASSETS
 
 _obstacles:
     ; W-E oriented quarries

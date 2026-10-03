@@ -39,61 +39,66 @@ static const struct rect question_rect = {
 };
 
 #define INITIAL_VALUE   88
-static const uint8_t *digit_assets[10];
+static const uint8_t *digit_assets[10] = {
+    asset_digit_0,
+    asset_digit_1,
+    asset_digit_2,
+    asset_digit_3,
+    asset_digit_4,
+    asset_digit_5,
+    asset_digit_6,
+    asset_digit_7,
+    asset_digit_8,
+    asset_digit_9,
+};
 
-static int8_t printed_clock_digits[NUMBER_OF_BUFFERS * 2];
-int8_t clock_digits[2];
+static int8_t printed_clock_digits[NUMBER_OF_BUFFERS * 2] = {
+    INITIAL_VALUE / 10,
+    INITIAL_VALUE % 10,
+    INITIAL_VALUE / 10,
+    INITIAL_VALUE % 10,
+};
 
-static uint8_t *user_message_lookup[PLAYER_MESSAGE_LENGTH];
-static uint8_t printed_user_messages[NUMBER_OF_BUFFERS * 2];
-uint8_t user_messages[2];
+int8_t clock_digits[2] = {
+    INITIAL_VALUE / 10,
+    INITIAL_VALUE % 10,
+};
 
-static uint8_t *question_lookup[QUESTION_LENGTH];
-static uint8_t printed_question[NUMBER_OF_BUFFERS];
-uint8_t question;
+static uint8_t *user_message_lookup[PLAYER_MESSAGE_LENGTH] = {
+    0,
+    asset_word_ready,
+    asset_word_mine,
+    asset_word_build,
+};
+
+static uint8_t printed_user_messages[NUMBER_OF_BUFFERS * 2] = {
+    PLAYER_MESSAGE_NONE,
+    PLAYER_MESSAGE_NONE,
+    PLAYER_MESSAGE_NONE,
+    PLAYER_MESSAGE_NONE,
+};
+
+uint8_t user_messages[2] = {
+    PLAYER_MESSAGE_NONE,
+    PLAYER_MESSAGE_NONE,
+};
+
+static uint8_t *question_lookup[QUESTION_LENGTH] = {
+    0,
+    asset_question_ready,
+    asset_question_will_start,
+    asset_question_finished,
+};
+
+static uint8_t printed_question[NUMBER_OF_BUFFERS] = {
+    QUESTION_NONE,
+    QUESTION_NONE,
+};
+
+uint8_t question = QUESTION_NONE;
 
 void init_ui(void)
 {
-    uint8_t i;
-
-    digit_assets[0] = asset_digit_0;
-    digit_assets[1] = asset_digit_1;
-    digit_assets[2] = asset_digit_2;
-    digit_assets[3] = asset_digit_3;
-    digit_assets[4] = asset_digit_4;
-    digit_assets[5] = asset_digit_5;
-    digit_assets[6] = asset_digit_6;
-    digit_assets[7] = asset_digit_7;
-    digit_assets[8] = asset_digit_8;
-    digit_assets[9] = asset_digit_9;
-
-    user_message_lookup[PLAYER_MESSAGE_NONE] = 0;
-    user_message_lookup[PLAYER_MESSAGE_READY] = asset_word_ready;
-    user_message_lookup[PLAYER_MESSAGE_MINE] = asset_word_mine;
-    user_message_lookup[PLAYER_MESSAGE_BUILD] = asset_word_build;
-
-    for (i = 0; i < NUMBER_OF_BUFFERS; ++i) {
-        printed_clock_digits[2 * i + 0] = INITIAL_VALUE / 10;
-        printed_clock_digits[2 * i + 1] = INITIAL_VALUE % 10;
-    }
-    clock_digits[0] = INITIAL_VALUE / 10;
-    clock_digits[1] = INITIAL_VALUE % 10;
-
-    for (i = 0; i < 2; ++i) {
-        user_messages[i] = PLAYER_MESSAGE_NONE;
-        printed_user_messages[i] = PLAYER_MESSAGE_NONE;
-        printed_user_messages[2 + i] = PLAYER_MESSAGE_NONE;
-    }
-
-    question_lookup[QUESTION_NONE] = 0;
-    question_lookup[QUESTION_READY] = asset_question_ready;
-    question_lookup[QUESTION_WILL_START] = asset_question_will_start;
-    question_lookup[QUESTION_FINISHED] = asset_question_finished;
-
-    question = QUESTION_NONE;
-    printed_question[0] = QUESTION_NONE;
-    printed_question[1] = QUESTION_NONE;
-
     blit_sprite_xor(digit_assets[clock_digits[0]], &left_digit_rect);
     blit_sprite_xor(digit_assets[clock_digits[1]], &right_digit_rect);
     swap_buffers();

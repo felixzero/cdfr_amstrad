@@ -49,17 +49,12 @@ static struct requested_sprite *requested_sprites;
 
 static struct screen_history history[NUMBER_OF_BUFFERS];
 static sprite_handle_t requested_blit_order[MAX_NUMBER_OF_SPRITES];
-static uint8_t number_of_sprites;
+static uint8_t number_of_sprites = 0;
 
 #define BUFFER_HEAP_FB1 ((uint8_t*)(0x4000 - FB_BUFFER_HEAP_SIZE))
 #define BUFFER_HEAP_FB2 ((uint8_t*)(0xC000 - FB_BUFFER_HEAP_SIZE))
-static uint16_t allocated_size;
+static uint16_t allocated_size = 0;
 
-void init_sprite_system(void)
-{
-    allocated_size = 0;
-    number_of_sprites = 0;
-}
 
 sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect)
 {

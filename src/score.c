@@ -85,7 +85,7 @@ void display_scores(void)
     } else {
         set_text_palette(PALETTE_WHITE, PALETTE_BLACK);
         move_cursor(3, 17);
-        prints("Egalite");
+        prints("Match nul");
     }
 
     move_cursor(0, 19);
@@ -107,10 +107,10 @@ static void display_score_line(uint8_t line, const char* label, uint8_t blue_sco
     printint(yellow_score);  
 }
 
+static uint8_t i, score;
+
 static uint8_t calculate_stone_score(uint8_t player_id)
 {
-    static uint8_t i, score;
-
     score = 0;
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
         if ((obstacle_flags[i] & OBSTACLE_FLAG_PLAYER_ID) != player_id) {
@@ -124,8 +124,6 @@ static uint8_t calculate_stone_score(uint8_t player_id)
 
 static uint8_t calculate_wall_score(uint8_t player_id)
 {
-    static uint8_t i, score;
-
     score = 0;
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
         if ((obstacle_flags[i] & OBSTACLE_FLAG_PLAYER_ID) != player_id) {
@@ -142,8 +140,6 @@ static uint8_t calculate_wall_score(uint8_t player_id)
 
 static uint8_t calculate_tower_score(uint8_t player_id)
 {
-    static uint8_t i, score;
-
     score = 0;
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
         if (

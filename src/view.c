@@ -13,7 +13,11 @@ struct robot_view {
     uint8_t *sprite_assets[4];
 };
 
-struct robot_view robot_views[2];
+struct robot_view robot_views[2] = {
+    { .sprite = 0, .sprite_assets = { asset_robot_1e, asset_robot_1s, asset_robot_1w, asset_robot_1n }},
+    { .sprite = 0, .sprite_assets = { asset_robot_2e, asset_robot_2s, asset_robot_2w, asset_robot_2n }},
+};
+
 sprite_handle_t obstacle_sprites[NUMBER_OF_OBSTACLES];
 
 static void create_quarry_sprite(uint8_t obstacle_id);
@@ -26,20 +30,6 @@ void init_view(void)
     uint8_t i;
     struct point p;
     struct rect r;
-
-    init_sprite_system();
-
-    memset(&robot_views, 0, 2 * sizeof(struct robot_view));
-
-    robot_views[0].sprite_assets[ORIENTATION_EAST] = asset_robot_1e;
-    robot_views[0].sprite_assets[ORIENTATION_SOUTH] = asset_robot_1s;
-    robot_views[0].sprite_assets[ORIENTATION_WEST] = asset_robot_1w;
-    robot_views[0].sprite_assets[ORIENTATION_NORTH] = asset_robot_1n;
-
-    robot_views[1].sprite_assets[ORIENTATION_EAST] = asset_robot_2e;
-    robot_views[1].sprite_assets[ORIENTATION_SOUTH] = asset_robot_2s;
-    robot_views[1].sprite_assets[ORIENTATION_WEST] = asset_robot_2w;
-    robot_views[1].sprite_assets[ORIENTATION_NORTH] = asset_robot_2n;
 
     // Create robot sprites
     r.w = ASSET_ROBOT_1E_WIDTH;

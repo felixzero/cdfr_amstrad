@@ -22,7 +22,7 @@ enum {
     MINING_INTERACTION_BUILD
 };
 
-static uint8_t game_state;
+static uint8_t game_state = GAME_STATE_INIT;
 
 static void update_controller_init(void);
 static void update_controller_wait_ready(void);
@@ -30,7 +30,7 @@ static void update_controller_321(void);
 static void update_controller_play(void);
 static void update_controller_finished(void);
 
-static uint8_t frame_count, player_ready_flags;
+static uint8_t frame_count = 0, player_ready_flags = 0;
 
 void init_controller(void)
 {
@@ -38,11 +38,6 @@ void init_controller(void)
     memcpy(VIDEO_RAM_START, (void*)0x4000, 0x4000);
     swap_buffers();
 
-    game_state = GAME_STATE_INIT;
-    frame_count = 0;
-    player_ready_flags = 0;
-
-    init_model();
     init_view();
 }
 
@@ -117,8 +112,8 @@ static void update_controller_321(void)
     if (frame_count >= COUNT_DOWN_DELAY) {
         if (decrement_game_clock()) {
             question = QUESTION_NONE;
-            clock_digits[0] = 9;
-            clock_digits[1] = 9;
+            clock_digits[0] = 0;
+            clock_digits[1] = 5;
 
             game_state = GAME_STATE_PLAY;
         }

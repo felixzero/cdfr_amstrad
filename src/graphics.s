@@ -299,7 +299,5 @@ _get_current_buffer:
 ret$:
     ret
 
-
-.area _INITIALIZED
 current_buffer:
     .db BUFFER_C000
