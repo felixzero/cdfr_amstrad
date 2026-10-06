@@ -112,8 +112,8 @@ static void update_controller_321(void)
     if (frame_count >= COUNT_DOWN_DELAY) {
         if (decrement_game_clock()) {
             question = QUESTION_NONE;
-            clock_digits[0] = 0;
-            clock_digits[1] = 5;
+            clock_digits[0] = 9;
+            clock_digits[1] = 9;
 
             game_state = GAME_STATE_PLAY;
         }
@@ -237,6 +237,7 @@ static void update_controller_play(void)
             clock_digits[1] = 0;
             frame_counter = 0;
             game_state = GAME_STATE_FINISHED;
+            stop_audio_player();
         }
     }
 }

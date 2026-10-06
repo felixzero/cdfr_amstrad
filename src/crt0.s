@@ -6,6 +6,7 @@
 .globl l__INITIALIZED
 .globl s__INITIALIZED
 .globl s__INITIALIZER
+.globl interrupt_service_routine
 
 .area _CODE
 
@@ -34,6 +35,15 @@ _init:
     out (c), c
     ; Call initializer
     call gsinit
+    ; Install interrupt handler
+    ld hl, #0x0038
+    ld (hl), #0xC3 ; JP
+    inc l
+    ld (hl), #<interrupt_service_routine
+    inc l
+    ld (hl), #>interrupt_service_routine
+    ; Enable interrupts
+    ei
     jp _main
 
 .area _INITIALIZED

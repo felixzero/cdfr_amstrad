@@ -14,8 +14,8 @@ void swap_buffers(void);
 // Configure the display into double buffering or single buffering
 void set_double_buffering(bool enabled);
 
-// Swap the currently displayed buffer with the work buffer
-void wait_for_vsync(void);
+// Wait until number_of_screens has elapsed since the last call of wait_for_vsync
+void wait_for_vsync(uint8_t number_of_screens);
 
 // Pick an indexed color as a palette element
 void set_palette(uint8_t index, uint8_t value);

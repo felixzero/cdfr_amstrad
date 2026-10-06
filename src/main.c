@@ -5,6 +5,9 @@
 #include "controller.h"
 #include "print.h"
 #include "sprite_assets.h"
+#include "audio.h"
+
+#define GAME_FPS_DESAMPLING     3
 
 void display_title_screen(void);
 
@@ -43,12 +46,13 @@ __endasm;
     set_palette(15, AMS_COLOR_WHITE);
 
     display_title_screen();
+
     init_controller();
 
     while (1) {
         update_controller();
 
-        wait_for_vsync();
+        wait_for_vsync(GAME_FPS_DESAMPLING);
         swap_buffers();
     }
 }
@@ -58,6 +62,7 @@ void display_title_screen(void)
     static uint8_t *screen, i;
     static struct rect r;
 
+    init_audio_player(TITLE_SCREEN_START);
     set_double_buffering(false);
 
     memset(VIDEO_RAM_START, 0xC0, 0x4000);
@@ -85,8 +90,10 @@ void display_title_screen(void)
         for (int i = 0; i < 25; ++i) {
             *(screen + 80 * i) = 0xF3;
             *(screen + 80 * i + 2) = 0xF3;
+            *(screen + 80 * i + 4) = 0xF3;
             *(screen + 80 * i + 79) = 0xF3;
             *(screen + 80 * i + 77) = 0xF3;
+            *(screen + 80 * i + 75) = 0xF3;
         }
         screen += 0x0800;
     }
@@ -98,10 +105,13 @@ void display_title_screen(void)
     blit_sprite_xor(asset_logo, &r);
 
     while (1) {
+        wait_for_vsync(0);
         get_keypress();
         if (is_key_pressed(0, check_key_action)) {
             set_double_buffering(true);
+            stop_audio_player();
             return;
         }
+        play_audio_player();
     }
 }

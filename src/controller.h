@@ -11,8 +11,8 @@
 
 #define FRAME_PER_SECONDS               12
 
-#define INIT_FRAME_DELAY                50
-#define COUNT_DOWN_DELAY                50
+#define INIT_FRAME_DELAY                (1 * FRAME_PER_SECONDS)
+#define COUNT_DOWN_DELAY                (1 * FRAME_PER_SECONDS)
 
 void init_controller(void);
 void update_controller(void);

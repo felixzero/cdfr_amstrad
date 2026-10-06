@@ -5,6 +5,7 @@
 .globl _blit_sprite_xor
 .globl _blit_sprite_swap
 .globl _get_current_buffer
+.globl interrupt_service_routine
 
 .area _CODE
 
@@ -29,11 +30,12 @@ BLOCK_JUMP_OFFSET = (-0xF800 + 0xC050)
 ; Ret: -
 ; Modifies: AF, BC
 _wait_for_vsync:
-    ld b, #VSYNC_IN
-wait_loop$:
-    in a, (c)
-    rra
-    jr NC, wait_loop$
+wait$:
+    halt
+    ld hl, #vsync_counter
+    cp a, (hl)
+    jr NC, wait$
+    ld (hl), #0
     ret
 
 
@@ -253,10 +255,10 @@ loop_columns$1:
     ld a, (de)
     or a
     jr Z, skip_trans$
-    ex af, af'
+    push af
     ld a, (hl)
     ld (de), a
-    ex af, af'
+    pop af
     ld (hl), a
 skip_trans$:
     inc hl
@@ -299,5 +301,31 @@ _get_current_buffer:
 ret$:
     ret
 
+
+interrupt_service_routine:
+    ; Backup registers
+    ex af, af'
+    exx
+
+    ; Check if we are in VSync
+    ld b, #VSYNC_IN
+    in a, (c)
+    rra
+    jr NC, reti$
+
+    ; Increase counter
+    ld hl, #vsync_counter
+    inc (hl)
+
+    ; Restore registers and return
+reti$:
+    exx
+    ex af', af
+    ei
+    reti
+
+
 current_buffer:
     .db BUFFER_C000
+vsync_counter:
+    .db 0

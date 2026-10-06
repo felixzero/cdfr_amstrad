@@ -2,6 +2,7 @@
 #include "graphics.h"
 #include "print.h"
 #include "model.h"
+#include "view.h"
 
 #include <stdint.h>
 
@@ -68,14 +69,14 @@ void display_scores(void)
 
     display_score_line(15, "Total:  ", total_0, total_1);
 
-    if (score_0 > score_1) {
+    if (total_0 > total_1) {
         set_text_palette(PALETTE_WHITE, PALETTE_BLACK);
         move_cursor(3, 17);
         prints("Victoire de");
         move_cursor(15, 17);
         set_text_palette(PALETTE_WHITE, PALETTE_BLUE);
         prints("bleu");
-    } else if (score_1 > score_0) {
+    } else if (total_1 > total_0) {
         set_text_palette(PALETTE_WHITE, PALETTE_BLACK);
         move_cursor(3, 17);
         prints("Victoire de");

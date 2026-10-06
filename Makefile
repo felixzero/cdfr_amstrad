@@ -27,7 +27,9 @@ ASM_OBJS= \
 	build/inputs.s.rel \
 	build/rect.s.rel \
 	build/model_data.s.rel \
-	build/font.s.rel
+	build/font.s.rel \
+	build/music/akm_player.s.rel \
+	build/music/title_screen.s.rel
 
 C_OBJS= \
 	build/main.c.rel \
@@ -37,7 +39,8 @@ C_OBJS= \
 	build/controller.c.rel \
 	build/ui.c.rel \
 	build/print.c.rel \
-	build/score.c.rel
+	build/score.c.rel \
+	build/audio.c.rel
 
 BACKGROUND_OBJ=build/background.scr
 
@@ -139,6 +142,7 @@ playk7: dist/$(PGM_NAME).cdt
 
 clean:
 	@rm build/*
+	@mkdir build/music
 
 mrproper: clean
 	@rm dist/*
