@@ -69,6 +69,8 @@ static uint8_t *user_message_lookup[PLAYER_MESSAGE_LENGTH] = {
     asset_word_ready,
     asset_word_mine,
     asset_word_build,
+    asset_word_pick,
+    asset_word_put,
 };
 
 static uint8_t printed_user_messages[NUMBER_OF_BUFFERS * 2] = {

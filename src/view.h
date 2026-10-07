@@ -14,6 +14,11 @@
 #define TOWER_DISPLAY_OFFSET_U          6
 #define TOWER_DISPLAY_OFFSET_V          3
 
+#define GRAIL_DISPLAY_OFFSET_U          8
+#define GRAIL_DISPLAY_OFFSET_V          5
+#define GRAIL_Z_INDEX_OFFSET            8
+#define GRAIL_DISPLAY_OFFSET_Y_STONE    1
+
 #include "sprites.h"
 #include "model.h"
 

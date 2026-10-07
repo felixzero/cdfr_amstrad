@@ -75,10 +75,14 @@ SPRITE_ASSETS= \
 	artworks/word_build.png \
 	artworks/word_mine.png \
 	artworks/word_ready.png \
+	artworks/word_put.png \
+	artworks/word_pick.png \
 	artworks/question_ready.png \
 	artworks/question_will_start.png \
 	artworks/question_finished.png \
-	artworks/logo.png
+	artworks/logo.png \
+	artworks/pami.png \
+	artworks/grail.png
 
 all: dist/$(PGM_NAME).dsk dist/$(PGM_NAME).cdt
 
@@ -102,6 +106,8 @@ build/$(PGM_NAME).ihx: $(ASM_OBJS) $(C_OBJS)
 
 build/code.bin: build/$(PGM_NAME).ihx
 	python tools/ihx_to_bin.py -c $(CODE_LOC) -d $(INIT_LOC) -o $@ $<
+	@echo "DATA SIZE:" `stat -c %s build/initialized.bin` " out of " $(MAX_INITIALIZED_SIZE)
+	@echo "CODE SIZE:" `stat -c %s build/code.bin` " out of " $(MAX_CODE_SIZE)
 	@if [ `stat -c %s build/initialized.bin` -ge $(MAX_INITIALIZED_SIZE) ]; then echo "Error: init BIN file too large"; exit 1; fi
 	@if [ `stat -c %s build/code.bin` -ge $(MAX_CODE_SIZE) ]; then echo "Error: code BIN file too large"; exit 1; fi
 
@@ -132,7 +138,7 @@ play: build/code.bin $(BACKGROUND_OBJ)
 	$(EMULATOR) -enable_webapi -web_port 6128 &
 	sleep 2
 	python tools/load_to_emulator.py -c $(CODE_LOC) -b $(BACKGROUND_LOC) -d $(INIT_LOC) \
-		 --code build/code.bin --background build/background.scr --initialized build/initialized.bin
+		 --code build/code.bin --background build/background.scr --initialized build/initialized.bin --skip-intro
 
 playdisk: dist/$(PGM_NAME).dsk
 	$(EMULATOR) $<

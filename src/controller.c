@@ -5,24 +5,11 @@
 #include "ui.h"
 #include "print.h"
 #include "score.h"
+#include "audio.h"
 
 #include <string.h>
 
-enum {
-    GAME_STATE_INIT,
-    GAME_STATE_WAIT_READY,
-    GAME_STATE_321,
-    GAME_STATE_PLAY,
-    GAME_STATE_FINISHED
-};
-
-enum {
-    MINING_INTERACTION_NONE,
-    MINING_INTERACTION_MINE,
-    MINING_INTERACTION_BUILD
-};
-
-static uint8_t game_state = GAME_STATE_INIT;
+uint8_t game_state = GAME_STATE_INIT;
 
 static void update_controller_init(void);
 static void update_controller_wait_ready(void);
@@ -171,6 +158,14 @@ static void update_controller_play(void)
                 user_messages[i] = PLAYER_MESSAGE_BUILD;
                 break;
 
+                case MINING_INTERACTION_PICK:
+                user_messages[i] = PLAYER_MESSAGE_PICK;
+                break;
+
+                case MINING_INTERACTION_PUT:
+                user_messages[i] = PLAYER_MESSAGE_PUT;
+                break;
+
                 default:
                 user_messages[i] = PLAYER_MESSAGE_NONE;
                 break;
@@ -213,6 +208,18 @@ static void update_controller_play(void)
                     case MINING_INTERACTION_BUILD:
                     obstacle_stone_quantity[obstacle_id]++;
                     robot->carried_stones--;
+                    update_obstacle_sprite(obstacle_id);
+                    break;
+
+                    case MINING_INTERACTION_PICK:
+                    grail_locations[i] = -1;
+                    robot->carry_grail = true;
+                    update_obstacle_sprite(obstacle_id);
+                    break;
+
+                    case MINING_INTERACTION_PUT:
+                    grail_locations[i] = obstacle_id;
+                    robot->carry_grail = false;
                     update_obstacle_sprite(obstacle_id);
                     break;
                 }
@@ -268,7 +275,7 @@ int8_t check_collisions(struct point *uv, uint8_t robot_id)
 
     // Obstacle collision
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
-        if (rect_contains(&obstacles[i], uv) && (obstacle_stone_quantity[i] != 0)) {
+        if (rect_contains(&obstacles[i], uv) && ((obstacle_stone_quantity[i] != 0) || (grail_locations[0] == i) || (grail_locations[1] == i))) {
             return COLLISION_OBSTACLE_START + i;
         }
     }
@@ -330,6 +337,13 @@ uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
     obstacle_type = obstacle_flags[obstacle_id] & OBSTACLE_FLAG_TYPE;
     player_id = obstacle_flags[obstacle_id] & OBSTACLE_FLAG_PLAYER_ID;
 
+    // Pick the grail from its holder
+    if ((obstacle_type == OBSTACLE_TYPE_GRAIL_HOLDER) && (player_id == robot_id)) {
+        if (grail_locations[player_id] == obstacle_id) {
+            return MINING_INTERACTION_PICK;
+        }
+    }
+
     // Mining situation
     if ((obstacle_type == OBSTACLE_TYPE_QUARRY) || (player_id != robot_id)) {
         if (obstacle_stone_quantity[obstacle_id] > 0 && robot->carried_stones < 3) {
@@ -337,9 +351,11 @@ uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
         }
     }
 
-    // Construction situation
     if (player_id == robot_id) {
-        if (
+        // Deposition situation
+        if ((robot->carry_grail) && (obstacle_type == OBSTACLE_TYPE_WALL) && (obstacle_stone_quantity[obstacle_id] > 0)) {
+            return MINING_INTERACTION_PUT;
+        } else if ( // Construction situation
             (
                 (obstacle_type == OBSTACLE_TYPE_WALL)
                 && (robot->carried_stones > 0)

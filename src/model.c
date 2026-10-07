@@ -10,3 +10,4 @@ struct robot_model robots[2] = {
     { .position = { .x = TABLE_EDGE_U, .y = ROBOT_STARTING_POSITION_V }, .orientation = ORIENTATION_WEST },
 };
 
+int8_t grail_locations[2] = { GRAIL_HOLDERS_ID_START, GRAIL_HOLDERS_ID_START + 1 };

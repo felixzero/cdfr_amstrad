@@ -1,6 +1,7 @@
 .module crt0
 .globl _main
 .globl _init
+.globl _debug_mode
 .globl gsinit
 .globl gsfinal
 .globl l__INITIALIZED
@@ -28,6 +29,10 @@ gsfinal::
 
 .area _INIT (ABS)
 _init:
+    jp startup$
+_debug_mode:
+    .db 0
+startup$:
     ; No interrupts
     di
     ; Debank ROM, if needed
@@ -44,7 +49,7 @@ _init:
     ld (hl), #>interrupt_service_routine
     ; Enable interrupts
     ei
-    jp _main
+    call _main
 
 .area _INITIALIZED
 .area _SPRITE_ASSETS

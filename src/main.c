@@ -9,6 +9,8 @@
 
 #define GAME_FPS_DESAMPLING     3
 
+extern uint8_t game_state;
+extern bool debug_mode;
 void display_title_screen(void);
 
 void main()
@@ -45,9 +47,14 @@ __endasm;
     set_palette(14, AMS_COLOR_LYELLOW);
     set_palette(15, AMS_COLOR_WHITE);
 
-    display_title_screen();
+    if (!debug_mode) {
+        display_title_screen();
+    }
 
     init_controller();
+    if (debug_mode) {
+        game_state = GAME_STATE_PLAY;
+    }
 
     while (1) {
         update_controller();

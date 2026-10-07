@@ -23,6 +23,7 @@ sprite_handle_t obstacle_sprites[NUMBER_OF_OBSTACLES];
 static void create_quarry_sprite(uint8_t obstacle_id);
 static void create_wall_sprite(uint8_t obstacle_id);
 static void create_tower_sprite(uint8_t obstacle_id);
+static void create_grail_sprite(uint8_t obstacle_id);
 static inline void game_uv_to_screen_xy(struct point *xy, const struct point *uv);
 
 void init_view(void)
@@ -59,6 +60,10 @@ void init_view(void)
 
             case OBSTACLE_TYPE_TOWER:
             create_tower_sprite(i);
+            break;
+
+            case OBSTACLE_TYPE_GRAIL_HOLDER:
+            create_grail_sprite(i);
             break;
         }
     }
@@ -140,6 +145,26 @@ static void create_tower_sprite(uint8_t obstacle_id)
 }
 
 
+static void create_grail_sprite(uint8_t obstacle_id)
+{
+    struct rect r;
+    struct point p;
+    sprite_handle_t sprite;
+
+    r.w = ASSET_GRAIL_WIDTH;
+    r.h = ASSET_GRAIL_HEIGHT;
+    p.x = obstacles[obstacle_id].x + GRAIL_DISPLAY_OFFSET_U;
+    p.y = obstacles[obstacle_id].y + GRAIL_DISPLAY_OFFSET_V;
+    game_uv_to_screen_xy((struct point*)&r, &p);
+
+    sprite = create_sprite(asset_grail, &r);
+    obstacle_sprites[obstacle_id] = sprite;
+    set_sprite_z_index(sprite, r.y / 2 - GRAIL_Z_INDEX_OFFSET / 2);
+    set_sprite_visibility(sprite, true);
+    trigger_sprite_redraw(sprite);
+}
+
+
 void update_view(void)
 {
     draw_sprites();
@@ -156,15 +181,20 @@ static inline void game_uv_to_screen_xy(struct point *xy, const struct point *uv
 
 void update_obstacle_sprite(uint8_t obstacle_id)
 {
+    static struct point p_dest;
+    static struct point p;
     static bool is_oriented_east;
     static uint8_t stone_quantity;
     static uint8_t obstacle_type;
+    static uint8_t player_id;
     static sprite_handle_t obstacle_sprite;
+    static sprite_handle_t grail_sprite;
 
     is_oriented_east = IS_ORIENTED_EAST(obstacle_id);
     stone_quantity = obstacle_stone_quantity[obstacle_id];
     obstacle_type = obstacle_flags[obstacle_id] & OBSTACLE_FLAG_TYPE;
     obstacle_sprite = obstacle_sprites[obstacle_id];
+    player_id = obstacle_flags[obstacle_id] & OBSTACLE_FLAG_PLAYER_ID;
 
     if ((obstacle_type == OBSTACLE_TYPE_QUARRY) || (obstacle_type == OBSTACLE_TYPE_WALL)) {
         switch (stone_quantity) {
@@ -197,6 +227,24 @@ void update_obstacle_sprite(uint8_t obstacle_id)
         } else {
             set_sprite_visibility(obstacle_sprite, true);
         }
+    } else if (obstacle_type == OBSTACLE_TYPE_GRAIL_HOLDER) {
+        if (grail_locations[obstacle_id - GRAIL_HOLDERS_ID_START] == -1) {
+            set_sprite_visibility(obstacle_sprite, false);
+        }
+    }
+
+    // The grail is put on top
+    if ((player_id != OBSTACLE_PLAYER_ID_NONE) && (obstacle_id == grail_locations[player_id]) && !(obstacle_type == OBSTACLE_TYPE_GRAIL_HOLDER)) {
+            grail_sprite = obstacle_sprites[GRAIL_HOLDERS_ID_START + player_id];
+            set_sprite_visibility(grail_sprite, true);
+
+            p.x = obstacles[obstacle_id].x + GRAIL_DISPLAY_OFFSET_U;
+            p.y = obstacles[obstacle_id].y + GRAIL_DISPLAY_OFFSET_V;
+            game_uv_to_screen_xy(&p_dest, &p);
+            p_dest.y -= obstacle_stone_quantity[obstacle_id] * GRAIL_DISPLAY_OFFSET_Y_STONE;
+            move_sprite(grail_sprite, &p_dest);
+            set_sprite_z_index(grail_sprite, p_dest.y / 2 + 2);
+            trigger_sprite_redraw(grail_sprite);
     }
 
     trigger_sprite_redraw(obstacle_sprite);
@@ -221,6 +269,7 @@ void update_robot_sprite(uint8_t robot_id, bool change_orientation)
     set_sprite_z_index(view->sprite, p.y / 2);
     trigger_sprite_redraw(view->sprite);
 }
+
 
 void clear_view(void)
 {

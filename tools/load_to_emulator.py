@@ -36,6 +36,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--code-location", required=True)
     parser.add_argument("-b", "--background-location", required=True)
     parser.add_argument("-d", "--initialized-location", required=True)
+    parser.add_argument("--skip-intro", action="store_true")
 
     args = parser.parse_args()
     code_location = int(args.code_location, base=16)
@@ -65,6 +66,9 @@ if __name__ == "__main__":
     with open(args.code, "rb") as f:
         code = f.read()
     write_block(code, code_location)
+    
+    if args.skip_intro:
+        write_block(b"\x01", initialized_location + 3)
     
     query_server({
         "cmd": "setRegisters",

@@ -14,6 +14,22 @@
 #define INIT_FRAME_DELAY                (1 * FRAME_PER_SECONDS)
 #define COUNT_DOWN_DELAY                (1 * FRAME_PER_SECONDS)
 
+enum {
+    GAME_STATE_INIT,
+    GAME_STATE_WAIT_READY,
+    GAME_STATE_321,
+    GAME_STATE_PLAY,
+    GAME_STATE_FINISHED
+};
+
+enum {
+    MINING_INTERACTION_NONE,
+    MINING_INTERACTION_MINE,
+    MINING_INTERACTION_BUILD,
+    MINING_INTERACTION_PICK,
+    MINING_INTERACTION_PUT,
+};
+
 void init_controller(void);
 void update_controller(void);
 int8_t check_collisions(struct point *uv, uint8_t robot_id);
