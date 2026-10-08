@@ -78,7 +78,6 @@ SPRITE_ASSETS= \
 	artworks/word_pick.png \
 	artworks/question_ready.png \
 	artworks/question_will_start.png \
-	artworks/question_finished.png \
 	artworks/logo.png \
 	artworks/pami.png \
 	artworks/grail.png

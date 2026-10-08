@@ -25,7 +25,7 @@ static void create_wall_sprite(uint8_t obstacle_id);
 static void create_tower_sprite(uint8_t obstacle_id);
 static void create_grail_sprite(uint8_t obstacle_id);
 static void create_pami_sprite(uint8_t obstacle_id);
-static inline void game_uv_to_screen_xy(struct point *xy, const struct point *uv);
+static void game_uv_to_screen_xy(struct point *xy, const struct point *uv);
 
 
 static struct rect r;
@@ -178,7 +178,7 @@ void update_view(void)
 }
 
 
-static inline void game_uv_to_screen_xy(struct point *xy, const struct point *uv)
+static void game_uv_to_screen_xy(struct point *xy, const struct point *uv)
 {
     xy->x = POSITION_X_ORIGIN + uv->x - uv->y;
     xy->y = POSITION_Y_ORIGIN + uv->x + uv->y;

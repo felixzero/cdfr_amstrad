@@ -38,7 +38,7 @@ static const struct rect question_rect = {
     .h = ASSET_QUESTION_READY_HEIGHT
 };
 
-#define INITIAL_VALUE   15
+#define INITIAL_VALUE   42
 static const uint8_t *digit_assets[10] = {
     asset_digit_0,
     asset_digit_1,
@@ -89,7 +89,6 @@ static uint8_t *question_lookup[QUESTION_LENGTH] = {
     0,
     asset_question_ready,
     asset_question_will_start,
-    asset_question_finished,
 };
 
 static uint8_t printed_question[NUMBER_OF_BUFFERS] = {
@@ -119,9 +118,7 @@ bool decrement_game_clock(void)
         clock_digits[1] = 9;
         clock_digits[0]--;
     }
-    if (clock_digits[0] < 0) {
-        clock_digits[0] = 9;
-        clock_digits[1] = 9;
+    if ((clock_digits[0] == 0) && (clock_digits[1] == 0)) {
         return true;
     }
 

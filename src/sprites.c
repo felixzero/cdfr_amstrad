@@ -81,16 +81,19 @@ sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect)
     return number_of_sprites++;
 }
 
+
 void move_sprite(sprite_handle_t sprite, struct point *position)
 {
     requested_sprites[sprite].rect.x = position->x;
     requested_sprites[sprite].rect.y = position->y;
 }
 
+
 void set_sprite_z_index(sprite_handle_t sprite, int8_t z_index)
 {
     requested_sprites[sprite].z_index = z_index;
 }
+
 
 void set_sprite_visibility(sprite_handle_t sprite, bool visible)
 {
@@ -99,12 +102,14 @@ void set_sprite_visibility(sprite_handle_t sprite, bool visible)
     }
 }
 
+
 void change_sprite_asset(sprite_handle_t sprite, const uint8_t *graphics)
 {
     requested_sprites[sprite].graphics = graphics;
     history[0].blitted_sprites[sprite].status |= STATUS_GRAPHICS_CHANGED;
     history[1].blitted_sprites[sprite].status |= STATUS_GRAPHICS_CHANGED;
 }
+
 
 void trigger_sprite_redraw(sprite_handle_t sprite)
 {
@@ -132,7 +137,6 @@ void trigger_sprite_redraw(sprite_handle_t sprite)
     }
 }
 
-static void sort_sprites_by_z_index(void);
 
 struct screen_history *current_buffer_history;
 void draw_sprites(void)

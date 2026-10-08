@@ -52,6 +52,9 @@
 
 #define PAMI_0_POTENTIAL_QUARRY         8
 #define PAMI_1_POTENTIAL_QUARRY         9
+#define PAMI_MOTION_KNEE_1              31
+#define PAMI_MOTION_KNEE_2              44
+#define PAMI_MOTION_KNEE_3              72
 
 struct robot_model {
     struct point position;

@@ -236,7 +236,7 @@ static void update_controller_play(void)
         update_robot_sprite(i, change_orientation);
     }
 
-    // Move PAMIs
+    // Move PAMIs - only in the last 10s
     if (clock_digits[0] == 0) {
         move_pamis(pami_motions);
         update_pami_sprite(PAMI_ID_START);
@@ -249,7 +249,6 @@ static void update_controller_play(void)
     if (frame_counter >= FRAME_PER_SECONDS) {
         frame_counter = 0;
         if (decrement_game_clock()) {
-            //question = QUESTION_FINISHED;
             clock_digits[0] = 0;
             clock_digits[1] = 0;
             frame_counter = 0;
@@ -303,7 +302,9 @@ int8_t check_mining_interaction(struct point *uv)
 {
     static uint8_t i;
 
-    for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
+    // Reverse order favors towers over walls
+    // Otherwise towers are nearly impossible to build
+    for (i = PAMI_ID_START - 1; i != 0xFF; --i) {
         if (rect_contains(&obstacles[i], uv)) {
             return i;
         }
@@ -381,7 +382,12 @@ uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
                 && (robot->carried_stones > 0 && obstacle_stone_quantity[obstacle_id] < 1)
             )
         ) {
-            return MINING_INTERACTION_BUILD;
+            if (
+                (!rect_contains(&obstacles[obstacle_id], &robots[0].position))
+                && (!rect_contains(&obstacles[obstacle_id], &robots[1].position))
+            ) {
+                return MINING_INTERACTION_BUILD;
+            }
         }
     }
 
@@ -394,18 +400,20 @@ static void move_pamis(uint8_t iteration)
     static struct rect *obstacle;
     static uint8_t i;
 
-    for (i = 0; i < 2; ++i) {
+    for (i = 0; i < NUMBER_OF_PAMIS; ++i) {
         if (!pami_stuck[i]) {
             obstacle = &obstacles[PAMI_ID_START + i];
 
-            if (iteration < 31) {
+            // PAMIs perform a Z shape motion
+            if (iteration < PAMI_MOTION_KNEE_1) {
                 obstacle->x += i ? -1 : 1;
-            } else if (iteration < 44) {
+            } else if (iteration < PAMI_MOTION_KNEE_2) {
                 obstacle->y += i ? -1 : 1;
-            } else if (iteration < 72) {
+            } else if (iteration < PAMI_MOTION_KNEE_3) {
                 obstacle->x += i ? -1 : 1;
             }
 
+            // PAMI stuck by robot
             if (
                 rect_contains(obstacle, &robots[0].position)
                 || rect_contains(obstacle, &robots[1].position)
@@ -413,6 +421,7 @@ static void move_pamis(uint8_t iteration)
                 pami_stuck[i] = true;
             }
 
+            // PAMI stuck by unmined quarry
             if (
                 (obstacle_stone_quantity[PAMI_0_POTENTIAL_QUARRY] > 0 && rect_intersects(obstacle, &obstacles[PAMI_0_POTENTIAL_QUARRY]))
                 || (obstacle_stone_quantity[PAMI_1_POTENTIAL_QUARRY] > 0 && rect_intersects(obstacle, &obstacles[PAMI_1_POTENTIAL_QUARRY]))
