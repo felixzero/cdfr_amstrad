@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdbool.h>
 #include "rect.h"
 
 #define ORIENTATION_EAST                0
@@ -21,7 +22,9 @@
 #define NUMBER_OF_WALLS                 10
 #define NUMBER_OF_TOWERS                8
 #define NUMBER_OF_GRAIL_HOLDERS         2
+#define NUMBER_OF_PAMIS                 2
 #define GRAIL_HOLDERS_ID_START          (NUMBER_OF_QUARRIES + NUMBER_OF_WALLS + NUMBER_OF_TOWERS)
+#define PAMI_ID_START                   (NUMBER_OF_QUARRIES + NUMBER_OF_WALLS + NUMBER_OF_TOWERS + NUMBER_OF_GRAIL_HOLDERS)
 #define INITIAL_NUMBER_OF_STONES        3
 
 #define COLLISION_OUT_OF_TABLE          -1
@@ -29,22 +32,26 @@
 #define COLLISION_NOTHING               0
 #define COLLISION_OBSTACLE_START        1
 
-#define NUMBER_OF_OBSTACLES             (NUMBER_OF_QUARRIES + NUMBER_OF_WALLS + NUMBER_OF_TOWERS + NUMBER_OF_GRAIL_HOLDERS)
+#define NUMBER_OF_OBSTACLES             (NUMBER_OF_QUARRIES + NUMBER_OF_WALLS + NUMBER_OF_TOWERS + NUMBER_OF_GRAIL_HOLDERS + NUMBER_OF_PAMIS)
 
 #define OBSTACLE_FLAG_PLAYER_ID         0x03
 #define OBSTACLE_PLAYER_ID_0            0x00
 #define OBSTACLE_PLAYER_ID_1            0x01
 #define OBSTACLE_PLAYER_ID_NONE         0x02
 
-#define OBSTACLE_FLAG_TYPE              0x0C
+#define OBSTACLE_FLAG_TYPE              0x1C
 #define OBSTACLE_TYPE_QUARRY            0x00
 #define OBSTACLE_TYPE_WALL              0x04
 #define OBSTACLE_TYPE_TOWER             0x08
 #define OBSTACLE_TYPE_GRAIL_HOLDER      0x0C
+#define OBSTACLE_TYPE_PAMI              0x10
 
 #define OBSTACLE_FLAG_SOUTH_ORIENTED    (1 << 7)
 
 #define IS_ORIENTED_EAST(x)             !(obstacle_flags[x] & OBSTACLE_FLAG_SOUTH_ORIENTED)
+
+#define PAMI_0_POTENTIAL_QUARRY         8
+#define PAMI_1_POTENTIAL_QUARRY         9
 
 struct robot_model {
     struct point position;
@@ -54,8 +61,9 @@ struct robot_model {
     uint8_t action_timer;
 };
 
-extern const struct rect obstacles[NUMBER_OF_OBSTACLES];
+extern struct rect obstacles[NUMBER_OF_OBSTACLES];
 extern const uint8_t obstacle_flags[NUMBER_OF_OBSTACLES];
 extern uint8_t obstacle_stone_quantity[NUMBER_OF_OBSTACLES];
 extern struct robot_model robots[2];
 extern int8_t grail_locations[2];
+extern bool pami_stuck[2];

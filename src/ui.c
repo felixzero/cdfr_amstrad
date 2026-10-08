@@ -38,7 +38,7 @@ static const struct rect question_rect = {
     .h = ASSET_QUESTION_READY_HEIGHT
 };
 
-#define INITIAL_VALUE   88
+#define INITIAL_VALUE   15
 static const uint8_t *digit_assets[10] = {
     asset_digit_0,
     asset_digit_1,
@@ -99,6 +99,8 @@ static uint8_t printed_question[NUMBER_OF_BUFFERS] = {
 
 uint8_t question = QUESTION_NONE;
 
+static uint8_t current_buffer, i;
+
 void init_ui(void)
 {
     blit_sprite_xor(digit_assets[clock_digits[0]], &left_digit_rect);
@@ -129,7 +131,7 @@ bool decrement_game_clock(void)
 
 void update_ui_display(void)
 {
-    static uint8_t current_buffer, i, *current_printed_user_message, *current_printed_question;
+    static uint8_t *current_printed_user_message, *current_printed_question;
 
     current_buffer = get_current_buffer();
 
@@ -170,7 +172,7 @@ void update_ui_display(void)
 
 void clear_ui_elements(void)
 {
-    static uint8_t current_buffer, i, *current_printed_user_message, *current_printed_question;
+    static uint8_t *current_printed_user_message, *current_printed_question;
 
     current_buffer = get_current_buffer();
     current_printed_question = &printed_question[current_buffer];

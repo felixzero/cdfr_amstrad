@@ -25,6 +25,8 @@ static uint8_t calculate_stone_score(uint8_t player_id);
 static uint8_t calculate_wall_score(uint8_t player_id);
 static uint8_t calculate_tower_score(uint8_t player_id);
 
+static uint8_t i, score;
+
 void display_scores(void)
 {
     static uint8_t total_0, total_1, score_0, score_1;
@@ -93,6 +95,7 @@ void display_scores(void)
     prints("Appuyez sur A pour rejouer");
 }
 
+
 static void display_score_line(uint8_t line, const char* label, uint8_t blue_score, uint8_t yellow_score)
 {
     set_text_palette(PALETTE_WHITE, PALETTE_BLACK);
@@ -108,7 +111,6 @@ static void display_score_line(uint8_t line, const char* label, uint8_t blue_sco
     printint(yellow_score);  
 }
 
-static uint8_t i, score;
 
 static uint8_t calculate_stone_score(uint8_t player_id)
 {
@@ -122,6 +124,7 @@ static uint8_t calculate_stone_score(uint8_t player_id)
 
     return score;
 }
+
 
 static uint8_t calculate_wall_score(uint8_t player_id)
 {
@@ -138,6 +141,7 @@ static uint8_t calculate_wall_score(uint8_t player_id)
 
     return score;
 }
+
 
 static uint8_t calculate_tower_score(uint8_t player_id)
 {

@@ -1,4 +1,4 @@
-#define MAX_NUMBER_OF_SPRITES 32
+#define MAX_NUMBER_OF_SPRITES 40
 
 #include "sprites.h"
 #include "sprite_assets.h"
@@ -42,10 +42,7 @@ struct requested_sprite
 #define REQUESTED_SPRITE_ZINDEX 6
 #define REQUESTED_SPRITE_SIZE 7
 
-static uint8_t __aligning[255];
-struct requested_sprite __requested_sprites[MAX_NUMBER_OF_SPRITES];
-static struct requested_sprite *requested_sprites;
-#define ASM_REQUESTED_SPRITE (___requested_sprites >> 8)
+static struct requested_sprite requested_sprites[MAX_NUMBER_OF_SPRITES];
 
 static struct screen_history history[NUMBER_OF_BUFFERS];
 static sprite_handle_t requested_blit_order[MAX_NUMBER_OF_SPRITES];
@@ -60,8 +57,7 @@ sprite_handle_t create_sprite(const uint8_t *graphics, struct rect *rect)
 {
     static uint8_t i;
     static struct blitted_sprite *blit;
-    
-    requested_sprites = (struct requested_sprite*)((uint16_t)&__requested_sprites[0] & 0xFF00);
+
     requested_sprites[number_of_sprites].size = rect->w * rect->h / 2;
 
     requested_sprites[number_of_sprites].graphics = graphics;
@@ -164,14 +160,14 @@ loop_clear$:
     ld a, (hl)
 
     ; IY = &current_buffer_history->blitted_sprites[A]
-    ld hl, (#_current_buffer_history)
-    ld de, #(MAX_NUMBER_OF_SPRITES)
+    ld h, #0
+    ld l, a
+    sla l
+    sla l
+    add hl, hl
+    ld de, (#_current_buffer_history)
     add hl, de
-    ld d, #0
-    ld e, a
-    sla e
-    sla e
-    sla e
+    ld de, #(MAX_NUMBER_OF_SPRITES)
     add hl, de
     push hl
     pop iy
@@ -215,13 +211,17 @@ outer_loop$:
 
     ; D = requested_sprites[E].z_index
     push hl
-    ld h, #ASM_REQUESTED_SPRITE
-    ld a, e
-    sla a
-    sla a
-    sla a
-    add a, #REQUESTED_SPRITE_ZINDEX
-    ld l, a
+    push de
+    ld h, #0
+    ld l, e
+    sla l
+    sla l
+    add hl, hl
+    ld de, #REQUESTED_SPRITE_ZINDEX
+    add hl, de
+    ld de, #_requested_sprites
+    add hl, de
+    pop de
     ld d, (hl)
     pop hl
 
@@ -235,20 +235,23 @@ inner_loop$:
 
     ; A = requested_sprites[A].z_index
     push hl
-    ld h, #ASM_REQUESTED_SPRITE
-    sla a
-    sla a
-    sla a
-    add a, #REQUESTED_SPRITE_ZINDEX
+    push de
+    ld h, #0
     ld l, a
+    sla l
+    sla l
+    add hl, hl
+    ld de, #_requested_sprites
+    add hl, de
+    ld de, #REQUESTED_SPRITE_ZINDEX
+    add hl, de
     ld a, (hl)
+    pop de
     pop hl
 
     ; if A < D, exit loop
     cp a, d
-    jr NC, skip_exit_inner_loop$
-    jr exit_inner_loop$
-skip_exit_inner_loop$:
+    jr C, exit_inner_loop$
 
     ; requested_blit_order[b] = requested_blit_order[b - 1]
     ld a, (hl)
@@ -286,23 +289,25 @@ for_loop_over_sprites$:
     add hl, bc
     ld a, (hl)
     push af
-    sla a
-    sla a
-    sla a
 
     ; IY = &current_buffer_history->blitted_sprites[effective]
-    ld hl, (#_current_buffer_history)
-    ld de, #(MAX_NUMBER_OF_SPRITES)
+    ld h, #0
+    ld l, a
+    sla l
+    sla l
+    add hl, hl
+    push hl
+    ld de, (#_current_buffer_history)
     add hl, de
-    ld d, #0
-    ld e, a
+    ld de, #(MAX_NUMBER_OF_SPRITES)
     add hl, de
     push hl
     pop iy
 
     ; IX = &requested_sprites[effective]
-    ld h, #ASM_REQUESTED_SPRITE
-    ld l, a
+    pop hl
+    ld de, #_requested_sprites
+    add hl, de
     push hl
     pop ix
 

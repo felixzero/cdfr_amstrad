@@ -26,7 +26,6 @@ ASM_OBJS= \
 	build/graphics.s.rel \
 	build/inputs.s.rel \
 	build/rect.s.rel \
-	build/model_data.s.rel \
 	build/font.s.rel \
 	build/music/akm_player.s.rel \
 	build/music/title_screen.s.rel

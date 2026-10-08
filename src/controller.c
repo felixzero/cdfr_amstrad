@@ -16,6 +16,7 @@ static void update_controller_wait_ready(void);
 static void update_controller_321(void);
 static void update_controller_play(void);
 static void update_controller_finished(void);
+static void move_pamis(uint8_t iteration);
 
 static uint8_t frame_count = 0, player_ready_flags = 0;
 
@@ -132,6 +133,7 @@ static void update_controller_play(void)
     static uint8_t i;
     static struct point p;
     static uint8_t frame_counter = 0;
+    static uint8_t pami_motions = 0;
     static bool change_orientation;
     static int8_t obstacle_id;
     static uint8_t mining_interaction;
@@ -234,6 +236,14 @@ static void update_controller_play(void)
         update_robot_sprite(i, change_orientation);
     }
 
+    // Move PAMIs
+    if (clock_digits[0] == 0) {
+        move_pamis(pami_motions);
+        update_pami_sprite(PAMI_ID_START);
+        update_pami_sprite(PAMI_ID_START + 1);
+        pami_motions++;
+    }
+
     // Update clock display
     frame_counter++;
     if (frame_counter >= FRAME_PER_SECONDS) {
@@ -275,7 +285,12 @@ int8_t check_collisions(struct point *uv, uint8_t robot_id)
 
     // Obstacle collision
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
-        if (rect_contains(&obstacles[i], uv) && ((obstacle_stone_quantity[i] != 0) || (grail_locations[0] == i) || (grail_locations[1] == i))) {
+        if (
+            rect_contains(&obstacles[i], uv)
+            && ((obstacle_stone_quantity[i] != 0)
+            || ((uint8_t)grail_locations[0] == i)
+            || ((uint8_t)grail_locations[1] == i))
+        ) {
             return COLLISION_OBSTACLE_START + i;
         }
     }
@@ -339,7 +354,7 @@ uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
 
     // Pick the grail from its holder
     if ((obstacle_type == OBSTACLE_TYPE_GRAIL_HOLDER) && (player_id == robot_id)) {
-        if (grail_locations[player_id] == obstacle_id) {
+        if ((uint8_t)grail_locations[player_id] == obstacle_id) {
             return MINING_INTERACTION_PICK;
         }
     }
@@ -373,3 +388,37 @@ uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
     return MINING_INTERACTION_NONE;
 }
 
+
+static void move_pamis(uint8_t iteration)
+{
+    static struct rect *obstacle;
+    static uint8_t i;
+
+    for (i = 0; i < 2; ++i) {
+        if (!pami_stuck[i]) {
+            obstacle = &obstacles[PAMI_ID_START + i];
+
+            if (iteration < 31) {
+                obstacle->x += i ? -1 : 1;
+            } else if (iteration < 44) {
+                obstacle->y += i ? -1 : 1;
+            } else if (iteration < 72) {
+                obstacle->x += i ? -1 : 1;
+            }
+
+            if (
+                rect_contains(obstacle, &robots[0].position)
+                || rect_contains(obstacle, &robots[1].position)
+            ) {
+                pami_stuck[i] = true;
+            }
+
+            if (
+                (obstacle_stone_quantity[PAMI_0_POTENTIAL_QUARRY] > 0 && rect_intersects(obstacle, &obstacles[PAMI_0_POTENTIAL_QUARRY]))
+                || (obstacle_stone_quantity[PAMI_1_POTENTIAL_QUARRY] > 0 && rect_intersects(obstacle, &obstacles[PAMI_1_POTENTIAL_QUARRY]))
+            ) {
+                pami_stuck[i] = true;
+            }
+        }
+    }
+}
