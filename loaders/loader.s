@@ -11,14 +11,14 @@ main:
     ld de, #_bg_dest_addr
     call load_file
 
-    ld b, #(code_name_end-code_name)
-    ld hl, #code_name
-    ld de, #_code_dest_addr
-    call load_file
-
     ld b, #(init_name_end-init_name)
     ld hl, #init_name
     ld de, #_init_dest_addr
+    call load_file
+
+    ld b, #(code_name_end-code_name)
+    ld hl, #code_name
+    ld de, #_code_dest_addr
     call load_file
 
     call _init_dest_addr
