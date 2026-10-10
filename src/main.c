@@ -6,12 +6,16 @@
 #include "print.h"
 #include "sprite_assets.h"
 #include "audio.h"
+#include "sprites.h"
 
 #define GAME_FPS_DESAMPLING     3
 
 extern uint8_t game_state;
 extern bool debug_mode;
 void display_title_screen(void);
+
+// Graphics backup buffer
+uint8_t *buffer_heap_fb1, *buffer_heap_fb2;
 
 void main()
 {
@@ -28,6 +32,10 @@ __asm
     ld bc, #0x7f54
     out (c), c
 __endasm;
+
+    buffer_heap_fb1 = (uint8_t*)(0x4000 - FB_BUFFER_HEAP_SIZE);
+    buffer_heap_fb2 = (uint8_t*)(0xC000 - FB_BUFFER_HEAP_SIZE);
+    init_sprites();
 
     // Configure palette
     set_palette(0, AMS_COLOR_MAGENTA);

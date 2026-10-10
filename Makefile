@@ -7,15 +7,15 @@ INIT_CODE_LOC=8000
 TRUE_INITIALIZED_DATA_LOC=8020
 BACKGROUND_LOC=4000
 ASM_LOADER_LOC=A600
-FB_BUFFER_HEAP_SIZE=0x1200
+FB_BUFFER_HEAP_SIZE=1200
 
-MAX_CODE_SIZE=11520
-MAX_INITIALIZED_SIZE=9952
+MAX_CODE_SIZE=`echo "ibase=16;4000 - ${FB_BUFFER_HEAP_SIZE} - ${CODE_LOC}" | bc`
+MAX_INITIALIZED_SIZE=`echo "ibase=16;${DATA_LOC} - ${INIT_LOC}" | bc`
 
 ASM=sdasz80
 ASMFLAGS=
 CC=sdcc
-CCFLAGS=-mz80 -Ibuild/ -DFB_BUFFER_HEAP_SIZE=$(FB_BUFFER_HEAP_SIZE)
+CCFLAGS=-mz80 -Ibuild/ -DFB_BUFFER_HEAP_SIZE=0x$(FB_BUFFER_HEAP_SIZE)
 LDFLAGS=-mz80 --code-loc 0x$(CODE_LOC) --data-loc 0x$(DATA_LOC) \
 	-Wl-b_INITIALIZED=0x$(TRUE_INITIALIZED_DATA_LOC) -Wl-b_INIT=0x$(INIT_CODE_LOC) --no-std-crt0
 EMULATOR=/opt/AceDL/AceDL
@@ -23,6 +23,7 @@ EMULATOR=/opt/AceDL/AceDL
 ASM_OBJS= \
 	build/crt0.s.rel \
 	build/sprite_assets.s.rel \
+	build/sprites.s.rel \
 	build/graphics.s.rel \
 	build/inputs.s.rel \
 	build/rect.s.rel \
@@ -32,7 +33,6 @@ ASM_OBJS= \
 
 C_OBJS= \
 	build/main.c.rel \
-	build/sprites.c.rel \
 	build/model.c.rel \
 	build/view.c.rel \
 	build/controller.c.rel \
