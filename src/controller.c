@@ -172,6 +172,8 @@ static void update_controller_play(void)
                 user_messages[i] = PLAYER_MESSAGE_NONE;
                 break;
             }
+        } else {
+            user_messages[i] = PLAYER_MESSAGE_NONE;
         }
 
         if (is_key_pressed(i, check_key_right)) {

@@ -46,7 +46,7 @@ struct rect obstacles[NUMBER_OF_OBSTACLES] = {
     { .x = 21, .y = 18, .w = 6, .h = 6 },
     { .x = 21, .y = 36, .w = 6, .h = 6 },
     // Player 2 towers
-    { .x = 73, .y = 10, .w = 6, .h = 6 },
+    { .x = 77, .y = 10, .w = 6, .h = 6 },
     { .x = 76, .y = 43, .w = 6, .h = 6 },
     { .x = 64, .y = 15, .w = 6, .h = 6 },
     { .x = 65, .y = 36, .w = 6, .h = 6 },

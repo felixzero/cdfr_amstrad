@@ -38,7 +38,7 @@ static const struct rect question_rect = {
     .h = ASSET_QUESTION_READY_HEIGHT
 };
 
-#define INITIAL_VALUE   42
+#define INITIAL_VALUE   10
 static const uint8_t *digit_assets[10] = {
     asset_digit_0,
     asset_digit_1,
