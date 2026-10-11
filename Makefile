@@ -80,7 +80,8 @@ SPRITE_ASSETS= \
 	artworks/question_will_start.png \
 	artworks/logo.png \
 	artworks/pami.png \
-	artworks/grail.png
+	artworks/grail.png \
+	artworks/brick_ui.png
 
 all: dist/$(PGM_NAME).dsk dist/$(PGM_NAME).cdt
 

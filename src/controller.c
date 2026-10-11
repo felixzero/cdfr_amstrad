@@ -204,12 +204,14 @@ static void update_controller_play(void)
                     case MINING_INTERACTION_MINE:
                     obstacle_stone_quantity[obstacle_id]--;
                     robot->carried_stones++;
+                    user_bricks[i] = robot->carried_stones;
                     update_obstacle_sprite(obstacle_id);
                     break;
 
                     case MINING_INTERACTION_BUILD:
                     obstacle_stone_quantity[obstacle_id]++;
                     robot->carried_stones--;
+                    user_bricks[i] = robot->carried_stones;
                     update_obstacle_sprite(obstacle_id);
                     break;
 

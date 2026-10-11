@@ -52,7 +52,7 @@ static const uint8_t *digit_assets[10] = {
     asset_digit_9,
 };
 
-static int8_t printed_clock_digits[NUMBER_OF_BUFFERS * 2] = {
+static int8_t printed_clock_digits[NUMBER_OF_BUFFERS * NUMBER_OF_CLOCK_DIGITS] = {
     INITIAL_VALUE / 10,
     INITIAL_VALUE % 10,
     INITIAL_VALUE / 10,
@@ -73,14 +73,14 @@ static uint8_t *user_message_lookup[PLAYER_MESSAGE_LENGTH] = {
     asset_word_put,
 };
 
-static uint8_t printed_user_messages[NUMBER_OF_BUFFERS * 2] = {
+static uint8_t printed_user_messages[NUMBER_OF_BUFFERS * NUMBER_OF_PLAYERS] = {
     PLAYER_MESSAGE_NONE,
     PLAYER_MESSAGE_NONE,
     PLAYER_MESSAGE_NONE,
     PLAYER_MESSAGE_NONE,
 };
 
-uint8_t user_messages[2] = {
+uint8_t user_messages[NUMBER_OF_PLAYERS] = {
     PLAYER_MESSAGE_NONE,
     PLAYER_MESSAGE_NONE,
 };
@@ -98,7 +98,52 @@ static uint8_t printed_question[NUMBER_OF_BUFFERS] = {
 
 uint8_t question = QUESTION_NONE;
 
+static const struct rect brick_ui_rects[] = {
+    {
+        .x = 2,
+        .y = 36,
+        .w = ASSET_BRICK_UI_WIDTH,
+        .h = ASSET_BRICK_UI_HEIGHT
+    },
+    {
+        .x = 10,
+        .y = 36,
+        .w = ASSET_BRICK_UI_WIDTH,
+        .h = ASSET_BRICK_UI_HEIGHT
+    },
+    {
+        .x = 18,
+        .y = 36,
+        .w = ASSET_BRICK_UI_WIDTH,
+        .h = ASSET_BRICK_UI_HEIGHT
+    },
+    {
+        .x = 134,
+        .y = 188,
+        .w = ASSET_BRICK_UI_WIDTH,
+        .h = ASSET_BRICK_UI_HEIGHT
+    },
+    {
+        .x = 142,
+        .y = 188,
+        .w = ASSET_BRICK_UI_WIDTH,
+        .h = ASSET_BRICK_UI_HEIGHT
+    },
+    {
+        .x = 150,
+        .y = 188,
+        .w = ASSET_BRICK_UI_WIDTH,
+        .h = ASSET_BRICK_UI_HEIGHT
+    },
+};
+
+uint8_t user_bricks[NUMBER_OF_PLAYERS] = { 0, 0 };
+static uint8_t printed_user_bricks[NUMBER_OF_BUFFERS * NUMBER_OF_PLAYERS] = { 0, 0, 0, 0 };
+
 static uint8_t current_buffer, i;
+
+static void clear_ui_elements_for_buffer(void);
+
 
 void init_ui(void)
 {
@@ -128,21 +173,21 @@ bool decrement_game_clock(void)
 
 void update_ui_display(void)
 {
-    static uint8_t *current_printed_user_message, *current_printed_question;
+    static uint8_t *current_printed_user_message, *current_printed_question, *current_printed_user_bricks;
 
     current_buffer = get_current_buffer();
 
-    if (printed_clock_digits[2 * current_buffer + 1] != clock_digits[1]) {
-        blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 0]], &left_digit_rect);
-        blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 1]], &right_digit_rect);
-        printed_clock_digits[2 * current_buffer + 0] = clock_digits[0];
-        printed_clock_digits[2 * current_buffer + 1] = clock_digits[1];
+    if (printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1] != clock_digits[1]) {
+        blit_sprite_xor(digit_assets[printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0]], &left_digit_rect);
+        blit_sprite_xor(digit_assets[printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1]], &right_digit_rect);
+        printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0] = clock_digits[0];
+        printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1] = clock_digits[1];
         blit_sprite_xor(digit_assets[clock_digits[0]], &left_digit_rect);
         blit_sprite_xor(digit_assets[clock_digits[1]], &right_digit_rect);
     }
 
-    for (i = 0; i < 2; ++i) {
-        current_printed_user_message = &printed_user_messages[2 * current_buffer + i];
+    for (i = 0; i < NUMBER_OF_PLAYERS; ++i) {
+        current_printed_user_message = &printed_user_messages[NUMBER_OF_PLAYERS * current_buffer + i];
 
         if (*current_printed_user_message != user_messages[i]) {
             if (*current_printed_user_message) {
@@ -152,6 +197,16 @@ void update_ui_display(void)
             if (user_messages[i]) {
                 blit_sprite_xor(user_message_lookup[user_messages[i]], players_action_rect + i);
             }
+        }
+
+        current_printed_user_bricks = &printed_user_bricks[NUMBER_OF_PLAYERS * current_buffer + i];
+        while (*current_printed_user_bricks > user_bricks[i]) {
+            (*current_printed_user_bricks)--;
+            blit_sprite_xor(asset_brick_ui, &brick_ui_rects[i * MAX_NUMBER_OF_BRICKS + *current_printed_user_bricks]);
+        }
+        while (*current_printed_user_bricks < user_bricks[i]) {
+            blit_sprite_xor(asset_brick_ui, &brick_ui_rects[i * MAX_NUMBER_OF_BRICKS + *current_printed_user_bricks]);
+            (*current_printed_user_bricks)++;
         }
     }
 
@@ -167,39 +222,40 @@ void update_ui_display(void)
     }
 }
 
+
 void clear_ui_elements(void)
 {
-    static uint8_t *current_printed_user_message, *current_printed_question;
-
     current_buffer = get_current_buffer();
-    current_printed_question = &printed_question[current_buffer];
-
-    blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 0]], &left_digit_rect);
-    blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 1]], &right_digit_rect);
-    for (i = 0; i < 2; ++i) {
-        current_printed_user_message = &printed_user_messages[2 * current_buffer + i];
-        if (*current_printed_user_message != PLAYER_MESSAGE_NONE) {
-            blit_sprite_xor(user_message_lookup[*current_printed_user_message], players_action_rect + i);
-        }
-    }
-    if (*current_printed_question) {
-        blit_sprite_xor(question_lookup[*current_printed_question], &question_rect);
-    }
-
+    
+    clear_ui_elements_for_buffer();
     swap_buffers();
     current_buffer = 1 - current_buffer;
+    clear_ui_elements_for_buffer();
+    swap_buffers();
+}
 
-    blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 0]], &left_digit_rect);
-    blit_sprite_xor(digit_assets[printed_clock_digits[2 * current_buffer + 1]], &right_digit_rect);
-    for (i = 0; i < 2; ++i) {
-        current_printed_user_message = &printed_user_messages[2 * current_buffer + i];
+
+static void clear_ui_elements_for_buffer(void)
+{
+    static uint8_t *current_printed_user_message, *current_printed_question, current_printed_user_bricks;
+
+    current_printed_question = &printed_question[current_buffer];
+
+    blit_sprite_xor(digit_assets[printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0]], &left_digit_rect);
+    blit_sprite_xor(digit_assets[printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1]], &right_digit_rect);
+    for (i = 0; i < NUMBER_OF_PLAYERS; ++i) {
+        current_printed_user_message = &printed_user_messages[NUMBER_OF_PLAYERS * current_buffer + i];
         if (*current_printed_user_message != PLAYER_MESSAGE_NONE) {
             blit_sprite_xor(user_message_lookup[*current_printed_user_message], players_action_rect + i);
+        }
+        
+        current_printed_user_bricks = printed_user_bricks[NUMBER_OF_PLAYERS * current_buffer + i];
+        while (current_printed_user_bricks > 0) {
+            current_printed_user_bricks--;
+            blit_sprite_xor(asset_brick_ui, &brick_ui_rects[i * MAX_NUMBER_OF_BRICKS + current_printed_user_bricks]);
         }
     }
     if (*current_printed_question) {
         blit_sprite_xor(question_lookup[*current_printed_question], &question_rect);
     }
-
-    swap_buffers();
 }

@@ -3,6 +3,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#define NUMBER_OF_PLAYERS       2
+#define NUMBER_OF_CLOCK_DIGITS  2
+#define MAX_NUMBER_OF_BRICKS    3
+
 enum {
     PLAYER_MESSAGE_NONE,
     PLAYER_MESSAGE_READY,
@@ -25,6 +29,7 @@ bool decrement_game_clock(void);
 void update_ui_display(void);
 void clear_ui_elements(void);
 
-extern uint8_t user_messages[2];
+extern uint8_t user_messages[NUMBER_OF_PLAYERS];
 extern uint8_t question;
-extern int8_t clock_digits[2];
+extern int8_t clock_digits[NUMBER_OF_PLAYERS];
+extern uint8_t user_bricks[NUMBER_OF_PLAYERS];
