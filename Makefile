@@ -76,12 +76,15 @@ SPRITE_ASSETS= \
 	artworks/word_ready.png \
 	artworks/word_put.png \
 	artworks/word_pick.png \
+	artworks/word_fire.png \
 	artworks/question_ready.png \
 	artworks/question_will_start.png \
 	artworks/logo.png \
 	artworks/pami.png \
 	artworks/grail.png \
-	artworks/brick_ui.png
+	artworks/brick_ui.png \
+	artworks/blue_ball.png \
+	artworks/yellow_ball.png
 
 all: dist/$(PGM_NAME).dsk dist/$(PGM_NAME).cdt
 

@@ -3,9 +3,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define NUMBER_OF_PLAYERS       2
+#include "model.h"
+
 #define NUMBER_OF_CLOCK_DIGITS  2
-#define MAX_NUMBER_OF_BRICKS    3
 
 enum {
     PLAYER_MESSAGE_NONE,
@@ -14,6 +14,7 @@ enum {
     PLAYER_MESSAGE_BUILD,
     PLAYER_MESSAGE_PICK,
     PLAYER_MESSAGE_PUT,
+    PLAYER_MESSAGE_FIRE,
     PLAYER_MESSAGE_LENGTH
 };
 

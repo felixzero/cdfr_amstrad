@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include "rect.h"
 
+#define NUMBER_OF_PLAYERS               2
+#define MAX_NUMBER_OF_BRICKS            3
+
 #define ORIENTATION_EAST                0
 #define ORIENTATION_SOUTH               1
 #define ORIENTATION_WEST                2
@@ -56,6 +59,12 @@
 #define PAMI_MOTION_KNEE_2              44
 #define PAMI_MOTION_KNEE_3              72
 
+#define NUMBER_OF_BALLS                 1
+#define BALL_PARABOLA_LENGTH            16
+#define MAX_BALL_DAMPING_FACTOR         2
+#define BALL_FLAGS_PLAYER_ID_MASK       0x01
+#define BALL_FLAGS_LAUNCHED_MASK        0x02
+
 struct robot_model {
     struct point position;
     uint8_t orientation;
@@ -64,9 +73,19 @@ struct robot_model {
     uint8_t action_timer;
 };
 
+struct ball_model {
+    uint8_t flags;
+    struct point position;
+    uint8_t orientation;
+    uint8_t parabolic_index;
+    uint8_t damping_factor;
+};
+
 extern struct rect obstacles[NUMBER_OF_OBSTACLES];
 extern const uint8_t obstacle_flags[NUMBER_OF_OBSTACLES];
 extern uint8_t obstacle_stone_quantity[NUMBER_OF_OBSTACLES];
-extern struct robot_model robots[2];
-extern int8_t grail_locations[2];
-extern bool pami_stuck[2];
+extern struct robot_model robots[NUMBER_OF_PLAYERS];
+extern int8_t grail_locations[NUMBER_OF_PLAYERS];
+extern bool pami_stuck[NUMBER_OF_PLAYERS];
+extern uint8_t ball_parabola[BALL_PARABOLA_LENGTH];
+extern struct ball_model balls[1];

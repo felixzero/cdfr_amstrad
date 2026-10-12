@@ -38,7 +38,7 @@ static const struct rect question_rect = {
     .h = ASSET_QUESTION_READY_HEIGHT
 };
 
-#define INITIAL_VALUE   10
+#define INITIAL_VALUE   20
 static const uint8_t *digit_assets[10] = {
     asset_digit_0,
     asset_digit_1,
@@ -71,6 +71,7 @@ static uint8_t *user_message_lookup[PLAYER_MESSAGE_LENGTH] = {
     asset_word_build,
     asset_word_pick,
     asset_word_put,
+    asset_word_fire
 };
 
 static uint8_t printed_user_messages[NUMBER_OF_BUFFERS * NUMBER_OF_PLAYERS] = {

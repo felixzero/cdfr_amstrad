@@ -7,6 +7,8 @@
 #include "score.h"
 #include "audio.h"
 
+#define TIME_FOR_BOMBS  ((clock_digits[0] == 0) || ((clock_digits[0] == 1) && (clock_digits[1] <= 5)))
+
 #include <string.h>
 
 uint8_t game_state = GAME_STATE_INIT;
@@ -16,7 +18,10 @@ static void update_controller_wait_ready(void);
 static void update_controller_321(void);
 static void update_controller_play(void);
 static void update_controller_finished(void);
+static void displace_with_orientation(struct point *position, uint8_t orientation, int8_t increment);
 static void move_pamis(uint8_t iteration);
+static void launch_ball(uint8_t player_id);
+static void update_flying_balls(void);
 
 static uint8_t frame_count = 0, player_ready_flags = 0;
 
@@ -146,34 +151,42 @@ static void update_controller_play(void)
         robot = &robots[i];
 
         mining_interaction = MINING_INTERACTION_NONE;
-        displace_robot(&p, i, ROBOT_MINING_DISTANCE);
-        obstacle_id = check_mining_interaction(&p);
-        if (obstacle_id >= 0) {
-            mining_interaction = manage_mining_interaction(obstacle_id, i);
 
-            switch (mining_interaction) {
-                case MINING_INTERACTION_MINE:
-                user_messages[i] = PLAYER_MESSAGE_MINE;
-                break;
+        p.x = robot->position.x;
+        p.y = robot->position.y;
+        displace_with_orientation(&p, robot->orientation, ROBOT_MINING_DISTANCE);
 
-                case MINING_INTERACTION_BUILD:
-                user_messages[i] = PLAYER_MESSAGE_BUILD;
-                break;
-
-                case MINING_INTERACTION_PICK:
-                user_messages[i] = PLAYER_MESSAGE_PICK;
-                break;
-
-                case MINING_INTERACTION_PUT:
-                user_messages[i] = PLAYER_MESSAGE_PUT;
-                break;
-
-                default:
-                user_messages[i] = PLAYER_MESSAGE_NONE;
-                break;
-            }
+        if (TIME_FOR_BOMBS) {
+            user_messages[i] = PLAYER_MESSAGE_FIRE;
         } else {
-            user_messages[i] = PLAYER_MESSAGE_NONE;
+            obstacle_id = check_mining_interaction(&p);
+            if (obstacle_id >= 0) {
+                mining_interaction = manage_mining_interaction(obstacle_id, i);
+
+                switch (mining_interaction) {
+                    case MINING_INTERACTION_MINE:
+                    user_messages[i] = PLAYER_MESSAGE_MINE;
+                    break;
+
+                    case MINING_INTERACTION_BUILD:
+                    user_messages[i] = PLAYER_MESSAGE_BUILD;
+                    break;
+
+                    case MINING_INTERACTION_PICK:
+                    user_messages[i] = PLAYER_MESSAGE_PICK;
+                    break;
+
+                    case MINING_INTERACTION_PUT:
+                    user_messages[i] = PLAYER_MESSAGE_PUT;
+                    break;
+
+                    default:
+                    user_messages[i] = PLAYER_MESSAGE_NONE;
+                    break;
+                }
+            } else {
+                user_messages[i] = PLAYER_MESSAGE_NONE;
+            }
         }
 
         if (is_key_pressed(i, check_key_right)) {
@@ -194,7 +207,10 @@ static void update_controller_play(void)
             robot->action_timer &= ROTATION_TIMER_MASK;
         } else if (is_key_pressed(i, check_key_up) || is_key_pressed(i, check_key_down)) {
             increment = is_key_pressed(i, check_key_up) ? 2 : -2;
-            displace_robot(&p, i, increment);
+
+            p.x = robot->position.x;
+            p.y = robot->position.y;
+            displace_with_orientation(&p, robot->orientation, increment);
 
             if (!check_collisions(&p, i)) {
                 robot->position.x = p.x;
@@ -202,33 +218,38 @@ static void update_controller_play(void)
             }
         } else if (is_key_pressed(i, check_key_action)) {
             if ((robot->action_timer == MINING_TIMER_OUT)) {
-                switch (mining_interaction) {
-                    case MINING_INTERACTION_MINE:
-                    obstacle_stone_quantity[obstacle_id]--;
-                    robot->carried_stones++;
-                    user_bricks[i] = robot->carried_stones;
-                    update_obstacle_sprite(obstacle_id);
-                    break;
+                if (TIME_FOR_BOMBS) {
+                    launch_ball(i);
+                } else {
+                    switch (mining_interaction) {
+                        case MINING_INTERACTION_MINE:
+                        obstacle_stone_quantity[obstacle_id]--;
+                        robot->carried_stones++;
+                        user_bricks[i] = robot->carried_stones;
+                        update_obstacle_sprite(obstacle_id);
+                        break;
 
-                    case MINING_INTERACTION_BUILD:
-                    obstacle_stone_quantity[obstacle_id]++;
-                    robot->carried_stones--;
-                    user_bricks[i] = robot->carried_stones;
-                    update_obstacle_sprite(obstacle_id);
-                    break;
+                        case MINING_INTERACTION_BUILD:
+                        obstacle_stone_quantity[obstacle_id]++;
+                        robot->carried_stones--;
+                        user_bricks[i] = robot->carried_stones;
+                        update_obstacle_sprite(obstacle_id);
+                        break;
 
-                    case MINING_INTERACTION_PICK:
-                    grail_locations[i] = -1;
-                    robot->carry_grail = true;
-                    update_obstacle_sprite(obstacle_id);
-                    break;
+                        case MINING_INTERACTION_PICK:
+                        grail_locations[i] = -1;
+                        robot->carry_grail = true;
+                        update_obstacle_sprite(obstacle_id);
+                        break;
 
-                    case MINING_INTERACTION_PUT:
-                    grail_locations[i] = obstacle_id;
-                    robot->carry_grail = false;
-                    update_obstacle_sprite(obstacle_id);
-                    break;
+                        case MINING_INTERACTION_PUT:
+                        grail_locations[i] = obstacle_id;
+                        robot->carry_grail = false;
+                        update_obstacle_sprite(obstacle_id);
+                        break;
+                    }
                 }
+
                 robot->action_timer = 0;
             } else {
                 robot->action_timer++;
@@ -247,6 +268,8 @@ static void update_controller_play(void)
         update_pami_sprite(PAMI_ID_START + 1);
         pami_motions++;
     }
+
+    update_flying_balls();
 
     // Update clock display
     frame_counter++;
@@ -318,33 +341,27 @@ int8_t check_mining_interaction(struct point *uv)
 }
 
 
-void displace_robot(struct point *destination, uint8_t robot_id, int8_t increment)
+static void displace_with_orientation(struct point *position, uint8_t orientation, int8_t increment)
 {
-    static struct robot_model *robot;
-
-    robot = &robots[robot_id];
-
-    destination->x = robot->position.x;
-    destination->y = robot->position.y;
-
-    switch (robot->orientation) {
+    switch (orientation) {
         case ORIENTATION_EAST:
-        destination->x += increment;
+        position->x += increment;
         return;
 
         case ORIENTATION_WEST:
-        destination->x -= increment;
+        position->x -= increment;
         return;
 
         case ORIENTATION_SOUTH:
-        destination->y += increment;
+        position->y += increment;
         return;
 
         case ORIENTATION_NORTH:
-        destination->y -= increment;
+        position->y -= increment;
         return;
     }
 }
+
 
 
 uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
@@ -433,5 +450,42 @@ static void move_pamis(uint8_t iteration)
                 pami_stuck[i] = true;
             }
         }
+    }
+}
+
+
+static void launch_ball(uint8_t player_id)
+{
+    balls[0].position.x = robots[player_id].position.x;
+    balls[0].position.y = robots[player_id].position.y;
+    balls[0].orientation = robots[player_id].orientation;
+    balls[0].flags |= BALL_FLAGS_LAUNCHED_MASK;
+}
+
+
+static void update_flying_balls(void)
+{
+    static uint8_t i;
+
+    for (i = 0; i < NUMBER_OF_BALLS; ++i) {
+        if (!(balls[i].flags & BALL_FLAGS_LAUNCHED_MASK)) {
+            continue;
+        }
+
+        if (balls[i].damping_factor < MAX_BALL_DAMPING_FACTOR) {
+            displace_with_orientation(
+                &balls[i].position,
+                balls[i].orientation,
+                (1 << (MAX_BALL_DAMPING_FACTOR - 1)) >> balls[i].damping_factor
+            );
+
+            balls[i].parabolic_index++;
+            if (balls[i].parabolic_index == BALL_PARABOLA_LENGTH) {
+                balls[i].parabolic_index = 0;
+                balls[i].damping_factor++;
+            }
+        }
+        
+        update_ball_sprite(i);
     }
 }

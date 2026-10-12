@@ -74,3 +74,9 @@ bool pami_stuck[2] = {
     false, false,
 };
 
+struct ball_model balls[1] = {
+    { .flags = 0, .position = { .x = 0, .y = ROBOT_STARTING_POSITION_V }, .orientation = ORIENTATION_EAST, .parabolic_index = 0, .damping_factor = 0 }
+};
+
+// [int(40 * (1 - (i - 7.5) ** 2 / 8 ** 2)) for i in range(16)]
+uint8_t ball_parabola[BALL_PARABOLA_LENGTH] = { 4, 13, 21, 27, 32, 36, 38, 39, 39, 38, 36, 32, 27, 21, 13, 4 };

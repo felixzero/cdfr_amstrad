@@ -36,5 +36,7 @@ void update_robot_sprite(uint8_t robot_id, bool change_orientation);
 
 void update_pami_sprite(uint8_t obstacle_id);
 
+void update_ball_sprite(uint8_t ball_id);
+
 // Remove all sprites and UI elements, and return to single buffer operation
 void clear_view(void);

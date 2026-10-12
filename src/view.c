@@ -19,12 +19,14 @@ struct robot_view robot_views[2] = {
 };
 
 sprite_handle_t obstacle_sprites[NUMBER_OF_OBSTACLES];
+sprite_handle_t ball_sprites[NUMBER_OF_PLAYERS];
 
 static void create_quarry_sprite(uint8_t obstacle_id);
 static void create_wall_sprite(uint8_t obstacle_id);
 static void create_tower_sprite(uint8_t obstacle_id);
 static void create_grail_sprite(uint8_t obstacle_id);
 static void create_pami_sprite(uint8_t obstacle_id);
+static void create_ball_sprite(uint8_t player_id);
 static void game_uv_to_screen_xy(struct point *xy, const struct point *uv);
 
 
@@ -75,6 +77,10 @@ void init_view(void)
             break;
         }
     }
+
+    // Balls to throw
+    create_ball_sprite(0);
+    create_ball_sprite(1);
 
     init_ui();
 }
@@ -168,6 +174,18 @@ static void create_pami_sprite(uint8_t obstacle_id)
     obstacle_sprites[obstacle_id] = sprite;
     set_sprite_z_index(sprite, r.y / 2 - PAMI_Z_INDEX_OFFSET / 2);
     trigger_sprite_redraw(sprite);
+}
+
+
+static void create_ball_sprite(uint8_t player_id)
+{
+    r.w = ASSET_BLUE_BALL_WIDTH;
+    r.h = ASSET_BLUE_BALL_HEIGHT;
+    r.x = 0;
+    r.y = 0;
+    sprite = create_sprite((player_id == 0) ? asset_blue_ball : asset_yellow_ball, &r);
+    ball_sprites[player_id] = sprite;
+    set_sprite_visibility(sprite, false);
 }
 
 
@@ -290,6 +308,23 @@ void update_pami_sprite(uint8_t obstacle_id)
 }
 
 
+void update_ball_sprite(uint8_t ball_id)
+{
+    sprite = ball_sprites[ball_id];
+
+    p.x = balls[ball_id].position.x;
+    p.y = balls[ball_id].position.y;
+    game_uv_to_screen_xy((struct point*)&r, &p);
+    set_sprite_z_index(sprite, r.y / 2);
+    r.y -= ball_parabola[balls[ball_id].parabolic_index] >> balls[ball_id].damping_factor;
+
+    set_sprite_visibility(sprite, true);
+
+    move_sprite(sprite, (struct point*)&r);
+    trigger_sprite_redraw(sprite);
+}
+
+
 void clear_view(void)
 {
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
@@ -298,6 +333,8 @@ void clear_view(void)
     }
     set_sprite_visibility(robot_views[0].sprite, false);
     set_sprite_visibility(robot_views[1].sprite, false);
+    set_sprite_visibility(ball_sprites[0], false);
+    set_sprite_visibility(ball_sprites[1], false);
 
     swap_buffers();
     draw_sprites();
