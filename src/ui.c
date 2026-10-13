@@ -2,18 +2,28 @@
 #include "graphics.h"
 #include "sprite_assets.h"
 
-static const struct rect left_digit_rect = {
-    .x = 126,
-    .y = 12,
-    .w = ASSET_DIGIT_0_WIDTH,
-    .h = ASSET_DIGIT_0_HEIGHT
+#define DIGIT_LED_LINES         7
+#define DIGIT_LINE_SPACING      5
+
+// First nibble codes the state of the two leftmost LED ; second nibble the other two
+static const uint8_t digits[10][DIGIT_LED_LINES] = {
+    { 0x33, 0x21, 0x21, 0x21, 0x21, 0x21, 0x33 }, // 0
+    { 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02 }, // 1
+    { 0x33, 0x01, 0x01, 0x33, 0x20, 0x20, 0x33 }, // 2
+    { 0x33, 0x01, 0x01, 0x33, 0x01, 0x01, 0x33 }, // 3
+    { 0x21, 0x21, 0x21, 0x33, 0x01, 0x01, 0x01 }, // 4
+    { 0x33, 0x20, 0x20, 0x33, 0x01, 0x01, 0x33 }, // 5
+    { 0x33, 0x20, 0x20, 0x33, 0x21, 0x21, 0x33 }, // 6
+    { 0x33, 0x01, 0x01, 0x13, 0x01, 0x01, 0x01 }, // 7
+    { 0x33, 0x21, 0x21, 0x33, 0x21, 0x21, 0x33 }, // 8
+    { 0x33, 0x21, 0x21, 0x33, 0x01, 0x01, 0x33 }, // 9
 };
 
-static const struct rect right_digit_rect = {
-    .x = 140,
-    .y = 26,
-    .w = ASSET_DIGIT_0_WIDTH,
-    .h = ASSET_DIGIT_0_HEIGHT
+static const uint8_t *digit_asset_lookup_table[] = {
+    asset_digit_00,
+    asset_digit_01,
+    asset_digit_10,
+    asset_digit_11,
 };
 
 static const struct rect players_action_rect[] = {
@@ -39,19 +49,6 @@ static const struct rect question_rect = {
 };
 
 #define INITIAL_VALUE   20
-static const uint8_t *digit_assets[10] = {
-    asset_digit_0,
-    asset_digit_1,
-    asset_digit_2,
-    asset_digit_3,
-    asset_digit_4,
-    asset_digit_5,
-    asset_digit_6,
-    asset_digit_7,
-    asset_digit_8,
-    asset_digit_9,
-};
-
 static int8_t printed_clock_digits[NUMBER_OF_BUFFERS * NUMBER_OF_CLOCK_DIGITS] = {
     INITIAL_VALUE / 10,
     INITIAL_VALUE % 10,
@@ -144,15 +141,13 @@ static uint8_t printed_user_bricks[NUMBER_OF_BUFFERS * NUMBER_OF_PLAYERS] = { 0,
 static uint8_t current_buffer, i;
 
 static void clear_ui_elements_for_buffer(void);
-
+static void blit_digits(uint8_t digit_1, uint8_t digit_2);
 
 void init_ui(void)
 {
-    blit_sprite_xor(digit_assets[clock_digits[0]], &left_digit_rect);
-    blit_sprite_xor(digit_assets[clock_digits[1]], &right_digit_rect);
+    blit_digits(clock_digits[0], clock_digits[1]);
     swap_buffers();
-    blit_sprite_xor(digit_assets[clock_digits[0]], &left_digit_rect);
-    blit_sprite_xor(digit_assets[clock_digits[1]], &right_digit_rect);
+    blit_digits(clock_digits[0], clock_digits[1]);
     swap_buffers();
 }
 
@@ -179,12 +174,16 @@ void update_ui_display(void)
     current_buffer = get_current_buffer();
 
     if (printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1] != clock_digits[1]) {
-        blit_sprite_xor(digit_assets[printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0]], &left_digit_rect);
-        blit_sprite_xor(digit_assets[printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1]], &right_digit_rect);
+        blit_digits(
+            printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0],
+            printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1]
+        );
         printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0] = clock_digits[0];
         printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1] = clock_digits[1];
-        blit_sprite_xor(digit_assets[clock_digits[0]], &left_digit_rect);
-        blit_sprite_xor(digit_assets[clock_digits[1]], &right_digit_rect);
+        blit_digits(
+            clock_digits[0],
+            clock_digits[1]
+        );
     }
 
     for (i = 0; i < NUMBER_OF_PLAYERS; ++i) {
@@ -242,8 +241,10 @@ static void clear_ui_elements_for_buffer(void)
 
     current_printed_question = &printed_question[current_buffer];
 
-    blit_sprite_xor(digit_assets[printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0]], &left_digit_rect);
-    blit_sprite_xor(digit_assets[printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1]], &right_digit_rect);
+    blit_digits(
+        printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0],
+        printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1]
+    );
     for (i = 0; i < NUMBER_OF_PLAYERS; ++i) {
         current_printed_user_message = &printed_user_messages[NUMBER_OF_PLAYERS * current_buffer + i];
         if (*current_printed_user_message != PLAYER_MESSAGE_NONE) {
@@ -258,5 +259,50 @@ static void clear_ui_elements_for_buffer(void)
     }
     if (*current_printed_question) {
         blit_sprite_xor(question_lookup[*current_printed_question], &question_rect);
+    }
+}
+
+static void blit_digits(uint8_t digit_1, uint8_t digit_2)
+{
+    static struct rect r;
+    static const uint8_t *digit_shape;
+
+    r.w = ASSET_DIGIT_00_WIDTH;
+    r.h = ASSET_DIGIT_00_HEIGHT;
+
+    r.x = 126;
+    r.y = 12;
+    digit_shape = &digits[digit_1][0];
+    for (uint8_t i = 0; i < DIGIT_LED_LINES; ++i) {
+        blit_sprite_xor(digit_asset_lookup_table[*digit_shape >> 4], &r);
+        r.y += DIGIT_LINE_SPACING;
+        digit_shape++;
+    }
+
+    r.x = 132;
+    r.y = 18;
+    digit_shape = &digits[digit_1][0];
+    for (uint8_t i = 0; i < DIGIT_LED_LINES; ++i) {
+        blit_sprite_xor(digit_asset_lookup_table[*digit_shape & 0x0F], &r);
+        r.y += DIGIT_LINE_SPACING;
+        digit_shape++;
+    }
+
+    r.x = 140;
+    r.y = 26;
+    digit_shape = &digits[digit_2][0];
+    for (uint8_t i = 0; i < DIGIT_LED_LINES; ++i) {
+        blit_sprite_xor(digit_asset_lookup_table[*digit_shape >> 4], &r);
+        r.y += DIGIT_LINE_SPACING;
+        digit_shape++;
+    }
+
+    r.x = 146;
+    r.y = 32;
+    digit_shape = &digits[digit_2][0];
+    for (uint8_t i = 0; i < DIGIT_LED_LINES; ++i) {
+        blit_sprite_xor(digit_asset_lookup_table[*digit_shape & 0x0F], &r);
+        r.y += DIGIT_LINE_SPACING;
+        digit_shape++;
     }
 }

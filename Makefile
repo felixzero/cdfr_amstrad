@@ -61,16 +61,6 @@ SPRITE_ASSETS= \
 	artworks/robot_2s.png \
 	artworks/robot_2w.png \
 	artworks/robot_2e.png \
-	artworks/digit_0.png \
-	artworks/digit_1.png \
-	artworks/digit_2.png \
-	artworks/digit_3.png \
-	artworks/digit_4.png \
-	artworks/digit_5.png \
-	artworks/digit_6.png \
-	artworks/digit_7.png \
-	artworks/digit_8.png \
-	artworks/digit_9.png \
 	artworks/word_build.png \
 	artworks/word_mine.png \
 	artworks/word_ready.png \
@@ -84,7 +74,11 @@ SPRITE_ASSETS= \
 	artworks/grail.png \
 	artworks/brick_ui.png \
 	artworks/blue_ball.png \
-	artworks/yellow_ball.png
+	artworks/yellow_ball.png \
+	artworks/digit_00.png \
+	artworks/digit_01.png \
+	artworks/digit_10.png \
+	artworks/digit_11.png
 
 all: dist/$(PGM_NAME).dsk dist/$(PGM_NAME).cdt
 

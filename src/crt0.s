@@ -54,6 +54,7 @@ startup$:
 .area _INITIALIZED
 .area _SPRITE_ASSETS
 .area _CODE_ASSETS
+.area _MUSIC_ASSETS
 .area _INITIALIZER
 
 .area _DATA
