@@ -63,11 +63,11 @@ int8_t clock_digits[2] = {
 
 static uint8_t *user_message_lookup[PLAYER_MESSAGE_LENGTH] = {
     0,
-    asset_word_ready,
     asset_word_mine,
     asset_word_build,
     asset_word_pick,
     asset_word_put,
+    asset_word_ready,
     asset_word_fire
 };
 

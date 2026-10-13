@@ -7,8 +7,6 @@
 #include "score.h"
 #include "audio.h"
 
-#define TIME_FOR_BOMBS  ((clock_digits[0] == 0) || ((clock_digits[0] == 1) && (clock_digits[1] <= 5)))
-
 #include <string.h>
 
 uint8_t game_state = GAME_STATE_INIT;
@@ -143,12 +141,17 @@ static void update_controller_play(void)
     static int8_t obstacle_id;
     static uint8_t mining_interaction;
     static struct robot_model *robot;
+    static bool is_player_firing;
 
     change_orientation = false;
     get_keypress();
 
     for (i = 0; i < 2; ++i) {
         robot = &robots[i];
+        is_player_firing = (
+            ((clock_digits[0] == 0) || ((clock_digits[0] == 1) && (clock_digits[1] <= 5)))
+            && (launched_balls[i] < NUMBER_OF_BALLS_PER_PLAYER)
+        );
 
         mining_interaction = MINING_INTERACTION_NONE;
 
@@ -156,38 +159,19 @@ static void update_controller_play(void)
         p.y = robot->position.y;
         displace_with_orientation(&p, robot->orientation, ROBOT_MINING_DISTANCE);
 
-        if (TIME_FOR_BOMBS) {
+        if (is_player_firing) {
             user_messages[i] = PLAYER_MESSAGE_FIRE;
         } else {
             obstacle_id = check_mining_interaction(&p);
             if (obstacle_id >= 0) {
                 mining_interaction = manage_mining_interaction(obstacle_id, i);
-
-                switch (mining_interaction) {
-                    case MINING_INTERACTION_MINE:
-                    user_messages[i] = PLAYER_MESSAGE_MINE;
-                    break;
-
-                    case MINING_INTERACTION_BUILD:
-                    user_messages[i] = PLAYER_MESSAGE_BUILD;
-                    break;
-
-                    case MINING_INTERACTION_PICK:
-                    user_messages[i] = PLAYER_MESSAGE_PICK;
-                    break;
-
-                    case MINING_INTERACTION_PUT:
-                    user_messages[i] = PLAYER_MESSAGE_PUT;
-                    break;
-
-                    default:
-                    user_messages[i] = PLAYER_MESSAGE_NONE;
-                    break;
-                }
+                user_messages[i] = mining_interaction;
             } else {
                 user_messages[i] = PLAYER_MESSAGE_NONE;
             }
         }
+
+        bool up_pressed = is_key_pressed(i, check_key_up);
 
         if (is_key_pressed(i, check_key_right)) {
             if (robot->action_timer == 0) {
@@ -205,8 +189,8 @@ static void update_controller_play(void)
             }
             robot->action_timer++;
             robot->action_timer &= ROTATION_TIMER_MASK;
-        } else if (is_key_pressed(i, check_key_up) || is_key_pressed(i, check_key_down)) {
-            increment = is_key_pressed(i, check_key_up) ? 2 : -2;
+        } else if (up_pressed || is_key_pressed(i, check_key_down)) {
+            increment = up_pressed ? 2 : -2;
 
             p.x = robot->position.x;
             p.y = robot->position.y;
@@ -218,7 +202,7 @@ static void update_controller_play(void)
             }
         } else if (is_key_pressed(i, check_key_action)) {
             if ((robot->action_timer == MINING_TIMER_OUT)) {
-                if (TIME_FOR_BOMBS) {
+                if (is_player_firing) {
                     launch_ball(i);
                 } else {
                     switch (mining_interaction) {
@@ -458,12 +442,12 @@ static void launch_ball(uint8_t player_id)
 {
     static uint8_t i;
 
-    i = first_available_ball_for_player[player_id];
-    if (
-        ((player_id == 0) && (i == NUMBER_OF_BALLS_PER_PLAYER))
-        || ((player_id == 1) && (i == 2 * NUMBER_OF_BALLS_PER_PLAYER))
-    ) {
+    i = launched_balls[player_id];
+    if (i == NUMBER_OF_BALLS_PER_PLAYER) {
         return;
+    }
+    if (player_id) {
+        i += NUMBER_OF_BALLS_PER_PLAYER;
     }
 
     balls[i].position.x = robots[player_id].position.x;
@@ -471,7 +455,7 @@ static void launch_ball(uint8_t player_id)
     balls[i].orientation = robots[player_id].orientation;
     balls[i].flags |= BALL_FLAGS_LAUNCHED_MASK;
 
-    first_available_ball_for_player[player_id]++;
+    launched_balls[player_id]++;
 }
 
 

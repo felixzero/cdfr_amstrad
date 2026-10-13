@@ -59,7 +59,7 @@
 #define PAMI_MOTION_KNEE_2              44
 #define PAMI_MOTION_KNEE_3              72
 
-#define NUMBER_OF_BALLS_PER_PLAYER      1
+#define NUMBER_OF_BALLS_PER_PLAYER      3
 #define NUMBER_OF_BALLS                 (NUMBER_OF_BALLS_PER_PLAYER * NUMBER_OF_PLAYERS)
 #define BALL_PARABOLA_LENGTH            16
 #define MAX_BALL_DAMPING_FACTOR         2
@@ -93,4 +93,4 @@ extern int8_t grail_locations[NUMBER_OF_PLAYERS];
 extern bool pami_stuck[NUMBER_OF_PLAYERS];
 extern const uint8_t ball_parabola[BALL_PARABOLA_LENGTH];
 extern struct ball_model balls[NUMBER_OF_BALLS];
-extern uint8_t first_available_ball_for_player[NUMBER_OF_PLAYERS];
+extern uint8_t launched_balls[NUMBER_OF_PLAYERS];
