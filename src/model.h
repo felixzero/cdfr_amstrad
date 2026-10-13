@@ -59,11 +59,15 @@
 #define PAMI_MOTION_KNEE_2              44
 #define PAMI_MOTION_KNEE_3              72
 
-#define NUMBER_OF_BALLS                 1
+#define NUMBER_OF_BALLS_PER_PLAYER      1
+#define NUMBER_OF_BALLS                 (NUMBER_OF_BALLS_PER_PLAYER * NUMBER_OF_PLAYERS)
 #define BALL_PARABOLA_LENGTH            16
 #define MAX_BALL_DAMPING_FACTOR         2
 #define BALL_FLAGS_PLAYER_ID_MASK       0x01
 #define BALL_FLAGS_LAUNCHED_MASK        0x02
+#define BALL_FLAGS_PLAYER_ID_0          0x00
+#define BALL_FLAGS_PLAYER_ID_1          0x01
+
 
 struct robot_model {
     struct point position;
@@ -87,5 +91,6 @@ extern uint8_t obstacle_stone_quantity[NUMBER_OF_OBSTACLES];
 extern struct robot_model robots[NUMBER_OF_PLAYERS];
 extern int8_t grail_locations[NUMBER_OF_PLAYERS];
 extern bool pami_stuck[NUMBER_OF_PLAYERS];
-extern uint8_t ball_parabola[BALL_PARABOLA_LENGTH];
-extern struct ball_model balls[1];
+extern const uint8_t ball_parabola[BALL_PARABOLA_LENGTH];
+extern struct ball_model balls[NUMBER_OF_BALLS];
+extern uint8_t first_available_ball_for_player[NUMBER_OF_PLAYERS];

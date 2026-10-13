@@ -456,10 +456,22 @@ static void move_pamis(uint8_t iteration)
 
 static void launch_ball(uint8_t player_id)
 {
-    balls[0].position.x = robots[player_id].position.x;
-    balls[0].position.y = robots[player_id].position.y;
-    balls[0].orientation = robots[player_id].orientation;
-    balls[0].flags |= BALL_FLAGS_LAUNCHED_MASK;
+    static uint8_t i;
+
+    i = first_available_ball_for_player[player_id];
+    if (
+        ((player_id == 0) && (i == NUMBER_OF_BALLS_PER_PLAYER))
+        || ((player_id == 1) && (i == 2 * NUMBER_OF_BALLS_PER_PLAYER))
+    ) {
+        return;
+    }
+
+    balls[i].position.x = robots[player_id].position.x;
+    balls[i].position.y = robots[player_id].position.y;
+    balls[i].orientation = robots[player_id].orientation;
+    balls[i].flags |= BALL_FLAGS_LAUNCHED_MASK;
+
+    first_available_ball_for_player[player_id]++;
 }
 
 

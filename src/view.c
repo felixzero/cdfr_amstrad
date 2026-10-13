@@ -19,7 +19,7 @@ struct robot_view robot_views[2] = {
 };
 
 sprite_handle_t obstacle_sprites[NUMBER_OF_OBSTACLES];
-sprite_handle_t ball_sprites[NUMBER_OF_PLAYERS];
+sprite_handle_t ball_sprites[NUMBER_OF_BALLS];
 
 static void create_quarry_sprite(uint8_t obstacle_id);
 static void create_wall_sprite(uint8_t obstacle_id);
@@ -79,8 +79,9 @@ void init_view(void)
     }
 
     // Balls to throw
-    create_ball_sprite(0);
-    create_ball_sprite(1);
+    for (i = 0; i < NUMBER_OF_BALLS; ++i) {
+        create_ball_sprite(i);
+    }
 
     init_ui();
 }
@@ -177,14 +178,20 @@ static void create_pami_sprite(uint8_t obstacle_id)
 }
 
 
-static void create_ball_sprite(uint8_t player_id)
+static void create_ball_sprite(uint8_t ball_id)
 {
     r.w = ASSET_BLUE_BALL_WIDTH;
     r.h = ASSET_BLUE_BALL_HEIGHT;
     r.x = 0;
     r.y = 0;
-    sprite = create_sprite((player_id == 0) ? asset_blue_ball : asset_yellow_ball, &r);
-    ball_sprites[player_id] = sprite;
+
+    if ((balls[ball_id].flags & BALL_FLAGS_PLAYER_ID_MASK) == BALL_FLAGS_PLAYER_ID_0) {
+        sprite = create_sprite(asset_blue_ball, &r);
+    } else {
+        sprite = create_sprite(asset_yellow_ball, &r);
+    }
+
+    ball_sprites[ball_id] = sprite;
     set_sprite_visibility(sprite, false);
 }
 
