@@ -458,7 +458,7 @@ static void launch_ball(uint8_t player_id)
 
 static void update_flying_balls(void)
 {
-    static uint8_t i;
+    static uint8_t i, j;
 
     for (i = 0; i < NUMBER_OF_BALLS; ++i) {
         if (!(balls[i].flags & BALL_FLAGS_LAUNCHED_MASK)) {
@@ -476,6 +476,16 @@ static void update_flying_balls(void)
             if (balls[i].parabolic_index == BALL_PARABOLA_LENGTH) {
                 balls[i].parabolic_index = 0;
                 balls[i].damping_factor++;
+            }
+
+            // Out of table balls are lost
+            if (
+                (balls[i].position.x & 0x80)
+                || (balls[i].position.y & 0x80)
+                || (balls[i].position.x > TABLE_EDGE_U)
+                || (balls[i].position.y > TABLE_EDGE_V)
+            ) {
+                balls[i].flags &= ~BALL_FLAGS_LAUNCHED_MASK;
             }
         }
         

@@ -193,7 +193,7 @@ const struct rect full_return_box[] = {
         .h = FULL_RETURN_MARGIN
     },
     {
-        .x = TABLE_EDGE_U - FULL_RETURN_MARGIN / 2,
+        .x = TABLE_EDGE_U - 2 * ROBOT_HALF_WIDTH - FULL_RETURN_MARGIN / 2,
         .y = ROBOT_STARTING_POSITION_V - FULL_RETURN_MARGIN / 2,
         .w = FULL_RETURN_MARGIN,
         .h = FULL_RETURN_MARGIN
@@ -207,7 +207,7 @@ const struct rect partial_return_box[] = {
         .h = PARTIAL_RETURN_MARGIN
     },
     {
-        .x = TABLE_EDGE_U - PARTIAL_RETURN_MARGIN / 2,
+        .x = TABLE_EDGE_U - 2 * ROBOT_HALF_WIDTH - PARTIAL_RETURN_MARGIN / 2,
         .y = ROBOT_STARTING_POSITION_V - PARTIAL_RETURN_MARGIN / 2,
         .w = PARTIAL_RETURN_MARGIN,
         .h = PARTIAL_RETURN_MARGIN
@@ -227,7 +227,20 @@ static uint8_t calculate_return_score(uint8_t player_id)
     return 0;
 }
 
-
+const struct rect ball_scoring_box[] = {
+    {
+        .x = TABLE_EDGE_U - 30,
+        .y = 16,
+        .w = 30,
+        .h = TABLE_EDGE_V - 2 * 16
+    },
+    {
+        .x = 0,
+        .y = 16,
+        .w = 30,
+        .h = TABLE_EDGE_V - 2 * 16
+    },
+};
 static uint8_t calculate_ball_score(uint8_t player_id)
 {
     static struct ball_model *ball;
@@ -240,8 +253,10 @@ static uint8_t calculate_ball_score(uint8_t player_id)
             return score;
         }
 
-        if (rect_contains(&partial_return_box[1 - player_id], &ball->position)) {
+        if (rect_contains(&ball_scoring_box[player_id], &ball->position)) {
             score += POINT_PER_BALL;
         }
     }
+
+    return score;
 }

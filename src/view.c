@@ -323,15 +323,26 @@ void update_pami_sprite(uint8_t obstacle_id)
 
 void update_ball_sprite(uint8_t ball_id)
 {
+    static uint8_t parabola_z;
+
     sprite = ball_sprites[ball_id];
 
     p.x = balls[ball_id].position.x;
     p.y = balls[ball_id].position.y;
     game_uv_to_screen_xy((struct point*)&r, &p);
     set_sprite_z_index(sprite, r.y / 2);
-    r.y -= ball_parabola[balls[ball_id].parabolic_index] >> balls[ball_id].damping_factor;
+    parabola_z = ball_parabola[balls[ball_id].parabolic_index] >> balls[ball_id].damping_factor;
 
-    set_sprite_visibility(sprite, true);
+    // The ball would otherwise glitch if blitted out of the screen
+    if (parabola_z > r.y) {
+        set_sprite_visibility(sprite, false);
+        trigger_sprite_redraw(sprite);
+        return;
+    }
+
+    r.y -= parabola_z;
+
+    set_sprite_visibility(sprite, balls[ball_id].flags & BALL_FLAGS_LAUNCHED_MASK);
 
     move_sprite(sprite, (struct point*)&r);
     trigger_sprite_redraw(sprite);

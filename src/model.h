@@ -55,6 +55,8 @@
 #define OBSTACLE_TYPE_GRAIL_HOLDER      0x0C
 #define OBSTACLE_TYPE_PAMI              0x10
 
+#define OBSTACLE_COLLISION_HEIGHT       30
+
 #define OBSTACLE_FLAG_SOUTH_ORIENTED    (1 << 7)
 
 #define IS_ORIENTED_EAST(x)             !(obstacle_flags[x] & OBSTACLE_FLAG_SOUTH_ORIENTED)
