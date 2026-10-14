@@ -196,6 +196,7 @@ static void update_controller_play(void)
             if (check_collisions(i)) {
                 displace_with_orientation((struct point*)&robot->position, robot->orientation, -increment);
             }
+            robot->action_timer = 0;
         } else if (is_key_pressed(i, check_key_action)) {
             if ((robot->action_timer == MINING_TIMER_OUT)) {
                 if (is_player_firing) {
