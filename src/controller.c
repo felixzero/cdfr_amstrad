@@ -249,7 +249,9 @@ static void update_controller_play(void)
         pami_motions++;
     }
 
-    update_flying_balls();
+    if ((clock_digits[0] == 0) || (clock_digits[0] == 1)) {
+        update_flying_balls();
+    }
 
     // Update clock display
     frame_counter++;

@@ -5,18 +5,21 @@
 #define DIGIT_LED_LINES         7
 #define DIGIT_LINE_SPACING      5
 
+#define DESTINATION_FIRST_DIGIT { digit_blit_destination.x = 126; digit_blit_destination.y = 12; }
+#define DESTINATION_SECOND_DIGIT { digit_blit_destination.x = 140; digit_blit_destination.y = 26; }
+
 // First nibble codes the state of the two leftmost LED ; second nibble the other two
-static const uint8_t digits[10][DIGIT_LED_LINES] = {
-    { 0x33, 0x21, 0x21, 0x21, 0x21, 0x21, 0x33 }, // 0
-    { 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02 }, // 1
-    { 0x33, 0x01, 0x01, 0x33, 0x20, 0x20, 0x33 }, // 2
-    { 0x33, 0x01, 0x01, 0x33, 0x01, 0x01, 0x33 }, // 3
-    { 0x21, 0x21, 0x21, 0x33, 0x01, 0x01, 0x01 }, // 4
-    { 0x33, 0x20, 0x20, 0x33, 0x01, 0x01, 0x33 }, // 5
-    { 0x33, 0x20, 0x20, 0x33, 0x21, 0x21, 0x33 }, // 6
-    { 0x33, 0x01, 0x01, 0x13, 0x01, 0x01, 0x01 }, // 7
-    { 0x33, 0x21, 0x21, 0x33, 0x21, 0x21, 0x33 }, // 8
-    { 0x33, 0x21, 0x21, 0x33, 0x01, 0x01, 0x33 }, // 9
+static const uint8_t digits[10][DIGIT_LED_LINES + 1] = {
+    { 0x33, 0x21, 0x21, 0x21, 0x21, 0x21, 0x33, 0 }, // 0
+    { 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0 }, // 1
+    { 0x33, 0x01, 0x01, 0x33, 0x20, 0x20, 0x33, 0 }, // 2
+    { 0x33, 0x01, 0x01, 0x33, 0x01, 0x01, 0x33, 0 }, // 3
+    { 0x21, 0x21, 0x21, 0x33, 0x01, 0x01, 0x01, 0 }, // 4
+    { 0x33, 0x20, 0x20, 0x33, 0x01, 0x01, 0x33, 0 }, // 5
+    { 0x33, 0x20, 0x20, 0x33, 0x21, 0x21, 0x33, 0 }, // 6
+    { 0x33, 0x01, 0x01, 0x13, 0x01, 0x01, 0x01, 0 }, // 7
+    { 0x33, 0x21, 0x21, 0x33, 0x21, 0x21, 0x33, 0 }, // 8
+    { 0x33, 0x21, 0x21, 0x33, 0x01, 0x01, 0x33, 0 }, // 9
 };
 
 static const uint8_t *digit_asset_lookup_table[] = {
@@ -140,14 +143,25 @@ static uint8_t printed_user_bricks[NUMBER_OF_BUFFERS * NUMBER_OF_PLAYERS] = { 0,
 
 static uint8_t current_buffer, i;
 
+static struct rect digit_blit_destination = {
+    .w = ASSET_DIGIT_00_WIDTH,
+    .h = ASSET_DIGIT_00_HEIGHT
+};
+
 static void clear_ui_elements_for_buffer(void);
-static void blit_digits(uint8_t digit_1, uint8_t digit_2);
+static void blit_digit(int8_t previous_digit, int8_t digit);
 
 void init_ui(void)
 {
-    blit_digits(clock_digits[0], clock_digits[1]);
+    DESTINATION_FIRST_DIGIT;
+    blit_digit(-1, clock_digits[0]);
+    DESTINATION_SECOND_DIGIT;
+    blit_digit(-1, clock_digits[1]);
     swap_buffers();
-    blit_digits(clock_digits[0], clock_digits[1]);
+    DESTINATION_FIRST_DIGIT;
+    blit_digit(-1, clock_digits[0]);
+    DESTINATION_SECOND_DIGIT;
+    blit_digit(-1, clock_digits[1]);
     swap_buffers();
 }
 
@@ -174,16 +188,19 @@ void update_ui_display(void)
     current_buffer = get_current_buffer();
 
     if (printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1] != clock_digits[1]) {
-        blit_digits(
+        DESTINATION_FIRST_DIGIT;
+        blit_digit(
             printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0],
-            printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1]
+            clock_digits[0]
         );
         printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0] = clock_digits[0];
-        printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1] = clock_digits[1];
-        blit_digits(
-            clock_digits[0],
+
+        DESTINATION_SECOND_DIGIT;
+        blit_digit(
+            printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1],
             clock_digits[1]
         );
+        printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1] = clock_digits[1];
     }
 
     for (i = 0; i < NUMBER_OF_PLAYERS; ++i) {
@@ -241,10 +258,11 @@ static void clear_ui_elements_for_buffer(void)
 
     current_printed_question = &printed_question[current_buffer];
 
-    blit_digits(
-        printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0],
-        printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1]
-    );
+    DESTINATION_FIRST_DIGIT;
+    blit_digit(printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 0], -1);
+    DESTINATION_SECOND_DIGIT;
+    blit_digit(printed_clock_digits[NUMBER_OF_CLOCK_DIGITS * current_buffer + 1], -1);
+
     for (i = 0; i < NUMBER_OF_PLAYERS; ++i) {
         current_printed_user_message = &printed_user_messages[NUMBER_OF_PLAYERS * current_buffer + i];
         if (*current_printed_user_message != PLAYER_MESSAGE_NONE) {
@@ -262,47 +280,52 @@ static void clear_ui_elements_for_buffer(void)
     }
 }
 
-static void blit_digits(uint8_t digit_1, uint8_t digit_2)
+static void blit_digit(int8_t previous_digit, int8_t digit)
 {
-    static struct rect r;
-    static const uint8_t *digit_shape;
+    static const uint8_t *digit_shape, *previous_digit_shape;
 
-    r.w = ASSET_DIGIT_00_WIDTH;
-    r.h = ASSET_DIGIT_00_HEIGHT;
-
-    r.x = 126;
-    r.y = 12;
-    digit_shape = &digits[digit_1][0];
-    for (uint8_t i = 0; i < DIGIT_LED_LINES; ++i) {
-        blit_sprite_xor(digit_asset_lookup_table[*digit_shape >> 4], &r);
-        r.y += DIGIT_LINE_SPACING;
-        digit_shape++;
+    if (digit >= 0) {
+        digit_shape = &digits[digit][0];
+    } else {
+        digit_shape = 0;
+    }
+    if (previous_digit >= 0) {
+        previous_digit_shape = &digits[previous_digit][0];
+    } else {
+        previous_digit_shape = 0;
     }
 
-    r.x = 132;
-    r.y = 18;
-    digit_shape = &digits[digit_1][0];
     for (uint8_t i = 0; i < DIGIT_LED_LINES; ++i) {
-        blit_sprite_xor(digit_asset_lookup_table[*digit_shape & 0x0F], &r);
-        r.y += DIGIT_LINE_SPACING;
-        digit_shape++;
-    }
+        // Remove old element if needed
+        if (previous_digit_shape && (!digit_shape || ((*digit_shape >> 4) != (*previous_digit_shape >> 4)))) {
+            blit_sprite_xor(digit_asset_lookup_table[*previous_digit_shape >> 4], &digit_blit_destination);
+        }
+        digit_blit_destination.x += 6;
+        digit_blit_destination.y += 6;
+        if (previous_digit_shape && (!digit_shape || ((*digit_shape & 0x0F) != (*previous_digit_shape & 0x0F)))) {
+            blit_sprite_xor(digit_asset_lookup_table[*previous_digit_shape & 0x0F], &digit_blit_destination);
+        }
+        digit_blit_destination.x -= 6;
+        digit_blit_destination.y -= 6;
 
-    r.x = 140;
-    r.y = 26;
-    digit_shape = &digits[digit_2][0];
-    for (uint8_t i = 0; i < DIGIT_LED_LINES; ++i) {
-        blit_sprite_xor(digit_asset_lookup_table[*digit_shape >> 4], &r);
-        r.y += DIGIT_LINE_SPACING;
-        digit_shape++;
-    }
+        // Draw new element
+        if (digit_shape && (!previous_digit_shape || ((*digit_shape >> 4) != (*previous_digit_shape >> 4)))) {
+            blit_sprite_xor(digit_asset_lookup_table[*digit_shape >> 4], &digit_blit_destination);
+        }
+        digit_blit_destination.x += 6;
+        digit_blit_destination.y += 6;
+        if (digit_shape && (!previous_digit_shape || ((*digit_shape & 0x0F) != (*previous_digit_shape & 0x0F)))) {
+            blit_sprite_xor(digit_asset_lookup_table[*digit_shape & 0x0F], &digit_blit_destination);
+        }
+        digit_blit_destination.x -= 6;
+        digit_blit_destination.y -= 6;
 
-    r.x = 146;
-    r.y = 32;
-    digit_shape = &digits[digit_2][0];
-    for (uint8_t i = 0; i < DIGIT_LED_LINES; ++i) {
-        blit_sprite_xor(digit_asset_lookup_table[*digit_shape & 0x0F], &r);
-        r.y += DIGIT_LINE_SPACING;
-        digit_shape++;
+        digit_blit_destination.y += DIGIT_LINE_SPACING;
+        if (digit_shape) {
+            digit_shape++;
+        }
+        if(previous_digit_shape) {
+            previous_digit_shape++;
+        }
     }
 }
