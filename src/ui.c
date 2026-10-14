@@ -48,7 +48,7 @@ static const struct rect question_rect = {
     .h = ASSET_QUESTION_READY_HEIGHT
 };
 
-#define INITIAL_VALUE   20
+#define INITIAL_VALUE   99
 static int8_t printed_clock_digits[NUMBER_OF_BUFFERS * NUMBER_OF_CLOCK_DIGITS] = {
     INITIAL_VALUE / 10,
     INITIAL_VALUE % 10,

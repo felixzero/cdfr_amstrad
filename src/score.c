@@ -15,20 +15,22 @@
 #define Y_BLUE 13
 #define Y_YELLOW 18
 
-#define POINT_PER_STONE 1
-#define POINT_PER_TOWER 3
-#define POINT_PER_WALL 2
-#define POINT_PER_GATE 5
-#define POINT_PER_PAMI 5
-#define POINT_PER_GRAIL 15
-#define POINT_FULL_RETURN 10
-#define POINT_PARTIAL_RETURN 5
+#define POINT_PER_STONE         1
+#define POINT_PER_TOWER         3
+#define POINT_PER_WALL          2
+#define POINT_PER_GATE          5
+#define POINT_PER_PAMI          5
+#define POINT_PER_GRAIL         15
+#define POINT_FULL_RETURN       10
+#define POINT_PARTIAL_RETURN    5
+#define POINT_PER_BALL          3
 
 static void display_score_line(uint8_t line, const char* label, uint8_t blue_score, uint8_t yellow_score);
 static uint8_t calculate_stone_score(uint8_t player_id);
 static uint8_t calculate_wall_score(uint8_t player_id);
 static uint8_t calculate_tower_score(uint8_t player_id);
 static uint8_t calculate_return_score(uint8_t player_id);
+static uint8_t calculate_ball_score(uint8_t player_id);
 
 static uint8_t i, score;
 
@@ -84,7 +86,11 @@ void display_scores(void)
     total_1 += score_1;
     display_score_line(13, "PAMI:   ", score_0, score_1);
 
-    display_score_line(14, "Boulet: ", 0, 0);
+    score_0 = calculate_ball_score(0);
+    score_1 = calculate_ball_score(1);
+    total_0 += score_0;
+    total_1 += score_1;
+    display_score_line(14, "Boulet: ", score_0, score_1);
 
     display_score_line(16, "Total:  ", total_0, total_1);
 
@@ -210,7 +216,7 @@ const struct rect partial_return_box[] = {
 
 static uint8_t calculate_return_score(uint8_t player_id)
 {
-    struct point *robot_position = &robots[player_id].position;
+    struct point *robot_position = (struct point*)&robots[player_id].position;
 
     if (rect_contains(&full_return_box[player_id], robot_position)) {
         return POINT_FULL_RETURN;
@@ -219,4 +225,23 @@ static uint8_t calculate_return_score(uint8_t player_id)
     }
 
     return 0;
+}
+
+
+static uint8_t calculate_ball_score(uint8_t player_id)
+{
+    static struct ball_model *ball;
+
+    score = 0;
+    for (uint8_t i = 0; i < NUMBER_OF_BALLS_PER_PLAYER; ++i) {
+        ball = &balls[player_id ? NUMBER_OF_BALLS_PER_PLAYER + i : i];
+
+        if (!(ball->flags & BALL_FLAGS_LAUNCHED_MASK)) {
+            return score;
+        }
+
+        if (rect_contains(&partial_return_box[1 - player_id], &ball->position)) {
+            score += POINT_PER_BALL;
+        }
+    }
 }

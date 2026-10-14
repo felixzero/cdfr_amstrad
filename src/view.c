@@ -5,6 +5,7 @@
 #include "sprite_assets.h"
 #include "ui.h"
 #include "controller.h"
+#include "model.h"
 
 #include <string.h>
 
@@ -13,19 +14,57 @@ struct robot_view {
     uint8_t *sprite_assets[4];
 };
 
-struct robot_view robot_views[2] = {
+struct robot_view robot_views[NUMBER_OF_PLAYERS] = {
     { .sprite = 0, .sprite_assets = { asset_robot_1e, asset_robot_1s, asset_robot_1w, asset_robot_1n }},
     { .sprite = 0, .sprite_assets = { asset_robot_2e, asset_robot_2s, asset_robot_2w, asset_robot_2n }},
 };
 
+struct obstacle_3d_model {
+    uint8_t asset_width;
+    uint8_t asset_height;
+    uint8_t z_index_off;
+    uint8_t offset_x;
+    uint8_t offset_y;
+    bool default_visibility;
+    uint8_t *asset;
+};
+
+static const struct obstacle_3d_model tower_3d_model = {
+    .asset_width = ASSET_TOWER_WIDTH,
+    .asset_height = ASSET_TOWER_HEIGHT,
+    .z_index_off = TOWER_WIDTH / 2,
+    .offset_x = TOWER_OFFSET_X,
+    .offset_y = TOWER_OFFSET_Y,
+    .default_visibility = false,
+    .asset = asset_tower,
+};
+
+static const struct obstacle_3d_model grail_holder_3d_model = {
+    .asset_width = ASSET_GRAIL_WIDTH,
+    .asset_height = ASSET_GRAIL_HEIGHT,
+    .z_index_off = GRAIL_WIDTH / 2,
+    .offset_x = GRAIL_OFFSET_X,
+    .offset_y = GRAIL_OFFSET_Y,
+    .default_visibility = true,
+    .asset = asset_grail,
+};
+
+static const struct obstacle_3d_model pami_3d_model = {
+    .asset_width = ASSET_PAMI_WIDTH,
+    .asset_height = ASSET_PAMI_HEIGHT,
+    .z_index_off = PAMI_WIDTH / 2,
+    .offset_x = PAMI_OFFSET_X,
+    .offset_y = PAMI_OFFSET_Y,
+    .default_visibility = true,
+    .asset = asset_pami,
+};
+
+
 sprite_handle_t obstacle_sprites[NUMBER_OF_OBSTACLES];
 sprite_handle_t ball_sprites[NUMBER_OF_BALLS];
 
-static void create_quarry_sprite(uint8_t obstacle_id);
-static void create_wall_sprite(uint8_t obstacle_id);
-static void create_tower_sprite(uint8_t obstacle_id);
-static void create_grail_sprite(uint8_t obstacle_id);
-static void create_pami_sprite(uint8_t obstacle_id);
+static void create_block_sprite(uint8_t obstacle_id);
+static void create_simple_sprite(uint8_t obstacle_id, const struct obstacle_3d_model *model);
 static void create_ball_sprite(uint8_t player_id);
 static void game_uv_to_screen_xy(struct point *xy, const struct point *uv);
 
@@ -34,21 +73,24 @@ static struct rect r;
 static struct point p;
 static uint8_t i;
 static sprite_handle_t sprite;
+static uint8_t z_index;
 
 
 void init_view(void)
 {
-    // Create robot sprites
     r.w = ASSET_ROBOT_1E_WIDTH;
     r.h = ASSET_ROBOT_1E_HEIGHT;
-    game_uv_to_screen_xy(&p, &robots[0].position);
-    r.x = p.x;
-    r.y = p.y;
+
+    // Create robot sprites
+    game_uv_to_screen_xy((struct point*)&r, (struct point*)&robots[0].position);
+    r.x -= ROBOT_OFFSET_X;
+    r.y -= ROBOT_OFFSET_Y;
     robot_views[0].sprite = create_sprite(asset_robot_1e, &r);
     set_sprite_z_index(robot_views[0].sprite, 0);
-    game_uv_to_screen_xy(&p, &robots[1].position);
-    r.x = p.x;
-    r.y = p.y;
+
+    game_uv_to_screen_xy((struct point*)&r, (struct point*)&robots[1].position);
+    r.x -= ROBOT_OFFSET_X;
+    r.y -= ROBOT_OFFSET_Y;
     robot_views[1].sprite = create_sprite(asset_robot_2w, &r);
     set_sprite_z_index(robot_views[1].sprite, 0);
 
@@ -57,23 +99,25 @@ void init_view(void)
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
         switch (obstacle_flags[i] & OBSTACLE_FLAG_TYPE) {
             case OBSTACLE_TYPE_QUARRY:
-            create_quarry_sprite(i);
+            create_block_sprite(i);
             break;
 
             case OBSTACLE_TYPE_WALL:
-            create_wall_sprite(i);
+            create_block_sprite(i);
+            set_sprite_visibility(sprite, false);
             break;
 
             case OBSTACLE_TYPE_TOWER:
-            create_tower_sprite(i);
+            create_simple_sprite(i, &tower_3d_model);
+            set_sprite_visibility(sprite, false);
             break;
 
             case OBSTACLE_TYPE_GRAIL_HOLDER:
-            create_grail_sprite(i);
+            create_simple_sprite(i, &grail_holder_3d_model);
             break;
 
             case OBSTACLE_TYPE_PAMI:
-            create_pami_sprite(i);
+            create_simple_sprite(i, &pami_3d_model);
             break;
         }
     }
@@ -87,13 +131,21 @@ void init_view(void)
 }
 
 
-static void create_quarry_sprite(uint8_t obstacle_id)
+static void create_block_sprite(uint8_t obstacle_id)
 {
+    p.x = obstacles[obstacle_id].x;
+    p.y = obstacles[obstacle_id].y;
+    game_uv_to_screen_xy((struct point*)&r, &p);
+    z_index = r.y / 2 - (BLOCK_WIDTH + BLOCK_LENGTH) / 4;
+    if (IS_ORIENTED_EAST(obstacle_id)) {
+        r.x -= EAST_BLOCK_OFFSET_X;
+        r.y -= EAST_BLOCK_OFFSET_Y;
+    } else {
+        r.x -= SOUTH_BLOCK_OFFSET_X;
+        r.y -= SOUTH_BLOCK_OFFSET_Y;
+    }
     r.w = ASSET_BLOCK_3E_WIDTH;
     r.h = ASSET_BLOCK_3E_HEIGHT;
-    p.x = obstacles[obstacle_id].x + QUARRY_DISPLAY_OFFSET_U;
-    p.y = obstacles[obstacle_id].y + QUARRY_DISPLAY_OFFSET_V;
-    game_uv_to_screen_xy((struct point*)&r, &p);
 
     if (IS_ORIENTED_EAST(obstacle_id)) {
         sprite = create_sprite(asset_block_3e, &r);
@@ -101,79 +153,26 @@ static void create_quarry_sprite(uint8_t obstacle_id)
         sprite = create_sprite(asset_block_3s, &r);
     }
     obstacle_sprites[obstacle_id] = sprite;
-    set_sprite_z_index(sprite, r.y / 2 - QUARRY_Z_INDEX_OFFSET / 2);
-    trigger_sprite_redraw(sprite);
-
-    obstacle_stone_quantity[obstacle_id] = INITIAL_NUMBER_OF_STONES;
-}
-
-
-static void create_wall_sprite(uint8_t obstacle_id)
-{
-    r.w = ASSET_BLOCK_3E_WIDTH;
-    r.h = ASSET_BLOCK_3E_HEIGHT;
-    p.x = obstacles[obstacle_id].x + WALL_DISPLAY_OFFSET_U;
-    p.y = obstacles[obstacle_id].y + WALL_DISPLAY_OFFSET_V;
-    game_uv_to_screen_xy((struct point*)&r, &p);
-
-    if (IS_ORIENTED_EAST(obstacle_id)) {
-        sprite = create_sprite(asset_block_1e, &r);
-    } else {
-        sprite = create_sprite(asset_block_1s, &r);
-    }
-    obstacle_sprites[obstacle_id] = sprite;
-    set_sprite_z_index(sprite, r.y / 2 - WALL_Z_INDEX_OFFSET / 2);
-    set_sprite_visibility(sprite, false);
-    trigger_sprite_redraw(sprite);
-
-    obstacle_stone_quantity[obstacle_id] = 0;
-}
-
-
-static void create_tower_sprite(uint8_t obstacle_id)
-{
-    r.w = ASSET_TOWER_WIDTH;
-    r.h = ASSET_TOWER_HEIGHT;
-    p.x = obstacles[obstacle_id].x + TOWER_DISPLAY_OFFSET_U;
-    p.y = obstacles[obstacle_id].y + TOWER_DISPLAY_OFFSET_V;
-    game_uv_to_screen_xy((struct point*)&r, &p);
-
-    sprite = create_sprite(asset_tower, &r);
-    obstacle_sprites[obstacle_id] = sprite;
-    set_sprite_z_index(sprite, r.y / 2 - WALL_Z_INDEX_OFFSET / 2);
-    set_sprite_visibility(sprite, false);
-    trigger_sprite_redraw(sprite);
-
-    obstacle_stone_quantity[obstacle_id] = 0;
-}
-
-
-static void create_grail_sprite(uint8_t obstacle_id)
-{
-    r.w = ASSET_GRAIL_WIDTH;
-    r.h = ASSET_GRAIL_HEIGHT;
-    p.x = obstacles[obstacle_id].x + GRAIL_DISPLAY_OFFSET_U;
-    p.y = obstacles[obstacle_id].y + GRAIL_DISPLAY_OFFSET_V;
-    game_uv_to_screen_xy((struct point*)&r, &p);
-
-    sprite = create_sprite(asset_grail, &r);
-    obstacle_sprites[obstacle_id] = sprite;
-    set_sprite_z_index(sprite, r.y / 2 - GRAIL_Z_INDEX_OFFSET / 2);
+    set_sprite_z_index(sprite, z_index);
     trigger_sprite_redraw(sprite);
 }
 
 
-static void create_pami_sprite(uint8_t obstacle_id)
+static void create_simple_sprite(uint8_t obstacle_id, const struct obstacle_3d_model *model)
 {
-    r.w = ASSET_PAMI_WIDTH;
-    r.h = ASSET_PAMI_HEIGHT;
-    p.x = obstacles[obstacle_id].x + PAMI_DISPLAY_OFFSET_U;
-    p.y = obstacles[obstacle_id].y + PAMI_DISPLAY_OFFSET_V;
+    r.w = model->asset_width;
+    r.h = model->asset_height;
+    p.x = obstacles[obstacle_id].x;
+    p.y = obstacles[obstacle_id].y;
     game_uv_to_screen_xy((struct point*)&r, &p);
+    z_index = r.y / 2 - model->z_index_off;
+    r.x -= model->offset_x;
+    r.y -= model->offset_y;
 
-    sprite = create_sprite(asset_pami, &r);
+    sprite = create_sprite(model->asset, &r);
     obstacle_sprites[obstacle_id] = sprite;
-    set_sprite_z_index(sprite, r.y / 2 - PAMI_Z_INDEX_OFFSET / 2);
+    set_sprite_z_index(sprite, z_index);
+    set_sprite_visibility(sprite, model->default_visibility);
     trigger_sprite_redraw(sprite);
 }
 
@@ -270,12 +269,14 @@ void update_obstacle_sprite(uint8_t obstacle_id)
             grail_sprite = obstacle_sprites[GRAIL_HOLDERS_ID_START + player_id];
             set_sprite_visibility(grail_sprite, true);
 
-            p.x = obstacles[obstacle_id].x + GRAIL_DISPLAY_OFFSET_U;
-            p.y = obstacles[obstacle_id].y + GRAIL_DISPLAY_OFFSET_V;
+            p.x = obstacles[obstacle_id].x;
+            p.y = obstacles[obstacle_id].y;
             game_uv_to_screen_xy((struct point*)&r, &p);
+            set_sprite_z_index(grail_sprite, r.y / 2 - grail_holder_3d_model.z_index_off + 1);
+            r.x -= grail_holder_3d_model.offset_x + GRAIL_DISPLAY_OFFSET_X;
+            r.y -= grail_holder_3d_model.offset_y + GRAIL_DISPLAY_OFFSET_Y;
             r.y -= obstacle_stone_quantity[obstacle_id] * GRAIL_DISPLAY_OFFSET_Y_STONE;
             move_sprite(grail_sprite, (struct point*)&r);
-            set_sprite_z_index(grail_sprite, r.y / 2 + 2);
             trigger_sprite_redraw(grail_sprite);
     }
 
@@ -295,9 +296,11 @@ void update_robot_sprite(uint8_t robot_id, bool change_orientation)
         change_sprite_asset(view->sprite, view->sprite_assets[robot->orientation]);
     }
 
-    game_uv_to_screen_xy(&p, &robot->position);
+    game_uv_to_screen_xy(&p, (struct point*)&robot->position);
+    set_sprite_z_index(view->sprite, p.y / 2 - ROBOT_HALF_WIDTH / 2);
+    p.x -= ROBOT_OFFSET_X;
+    p.y -= ROBOT_OFFSET_Y;
     move_sprite(view->sprite, &p);
-    set_sprite_z_index(view->sprite, p.y / 2);
     trigger_sprite_redraw(view->sprite);
 }
 
@@ -306,9 +309,12 @@ void update_pami_sprite(uint8_t obstacle_id)
 {
     sprite = obstacle_sprites[obstacle_id];
 
-    p.x = obstacles[obstacle_id].x + PAMI_DISPLAY_OFFSET_U;
-    p.y = obstacles[obstacle_id].y + PAMI_DISPLAY_OFFSET_V;
+    p.x = obstacles[obstacle_id].x;
+    p.y = obstacles[obstacle_id].y;
     game_uv_to_screen_xy((struct point*)&r, &p);
+    set_sprite_z_index(sprite, p.y / 2 - pami_3d_model.z_index_off);
+    p.x -= pami_3d_model.offset_x;
+    p.y -= pami_3d_model.offset_y;
 
     move_sprite(sprite, (struct point*)&r);
     trigger_sprite_redraw(sprite);
@@ -340,8 +346,10 @@ void clear_view(void)
     }
     set_sprite_visibility(robot_views[0].sprite, false);
     set_sprite_visibility(robot_views[1].sprite, false);
-    set_sprite_visibility(ball_sprites[0], false);
-    set_sprite_visibility(ball_sprites[1], false);
+
+    for (i = 0; i < NUMBER_OF_BALLS; ++i) {
+        set_sprite_visibility(ball_sprites[i], false);
+    }
 
     swap_buffers();
     draw_sprites();

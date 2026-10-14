@@ -16,6 +16,7 @@ static void update_controller_wait_ready(void);
 static void update_controller_321(void);
 static void update_controller_play(void);
 static void update_controller_finished(void);
+static int8_t check_collisions(uint8_t robot_id);
 static void displace_with_orientation(struct point *position, uint8_t orientation, int8_t increment);
 static void move_pamis(uint8_t iteration);
 static void launch_ball(uint8_t player_id);
@@ -155,8 +156,8 @@ static void update_controller_play(void)
 
         mining_interaction = MINING_INTERACTION_NONE;
 
-        p.x = robot->position.x;
-        p.y = robot->position.y;
+        p.x = robot->position.x + ROBOT_HALF_WIDTH;
+        p.y = robot->position.y + ROBOT_HALF_WIDTH;
         displace_with_orientation(&p, robot->orientation, ROBOT_MINING_DISTANCE);
 
         if (is_player_firing) {
@@ -191,14 +192,9 @@ static void update_controller_play(void)
             robot->action_timer &= ROTATION_TIMER_MASK;
         } else if (up_pressed || is_key_pressed(i, check_key_down)) {
             increment = up_pressed ? 2 : -2;
-
-            p.x = robot->position.x;
-            p.y = robot->position.y;
-            displace_with_orientation(&p, robot->orientation, increment);
-
-            if (!check_collisions(&p, i)) {
-                robot->position.x = p.x;
-                robot->position.y = p.y;
+            displace_with_orientation((struct point*)&robot->position, robot->orientation, increment);
+            if (check_collisions(i)) {
+                displace_with_orientation((struct point*)&robot->position, robot->orientation, -increment);
             }
         } else if (is_key_pressed(i, check_key_action)) {
             if ((robot->action_timer == MINING_TIMER_OUT)) {
@@ -270,33 +266,31 @@ static void update_controller_play(void)
 }
 
 
-int8_t check_collisions(struct point *uv, uint8_t robot_id)
+int8_t check_collisions(uint8_t robot_id)
 {
-    static struct rect r;
     static uint8_t i;
-    static struct robot_model *other_robot;
+    static struct robot_model *other_robot, *robot;
+    static const struct rect table_edge_collision_rect = {
+        .x = 0,
+        .y = 0,
+        .w = TABLE_EDGE_U - 2 * ROBOT_HALF_WIDTH,
+        .h = TABLE_EDGE_V - 2 * ROBOT_HALF_WIDTH
+    };
 
+    robot = &robots[robot_id];
     other_robot = &robots[1 - robot_id];
 
-    r.w = ROBOT_HITBOX * 2;
-    r.h = ROBOT_HITBOX * 2;
-    r.x = other_robot->position.x - ROBOT_HITBOX;
-    r.y = other_robot->position.y - ROBOT_HITBOX;
-
-    // Out of table
-    if ((uv->x & 0x80) || (uv->y & 0x80) || (uv->x > TABLE_EDGE_U) || (uv->y > TABLE_EDGE_V)) {
+    if (!rect_contains(&table_edge_collision_rect, (struct point*)&robot->position)) {
         return COLLISION_OUT_OF_TABLE;
     }
 
-    // Robot collision
-    if (rect_contains(&r, uv)) {
+    if (rect_intersects(&robot->position, &other_robot->position)) {
         return COLLISION_OTHER_ROBOT;
     }
 
-    // Obstacle collision
     for (i = 0; i < NUMBER_OF_OBSTACLES; ++i) {
         if (
-            rect_contains(&obstacles[i], uv)
+            rect_intersects(&obstacles[i], &robot->position)
             && ((obstacle_stone_quantity[i] != 0)
             || ((uint8_t)grail_locations[0] == i)
             || ((uint8_t)grail_locations[1] == i))
@@ -388,8 +382,8 @@ uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
             )
         ) {
             if (
-                (!rect_contains(&obstacles[obstacle_id], &robots[0].position))
-                && (!rect_contains(&obstacles[obstacle_id], &robots[1].position))
+                (!rect_contains(&obstacles[obstacle_id], (struct point*)&robots[0].position))
+                && (!rect_contains(&obstacles[obstacle_id], (struct point*)&robots[1].position))
             ) {
                 return MINING_INTERACTION_BUILD;
             }
@@ -420,8 +414,8 @@ static void move_pamis(uint8_t iteration)
 
             // PAMI stuck by robot
             if (
-                rect_contains(obstacle, &robots[0].position)
-                || rect_contains(obstacle, &robots[1].position)
+                rect_contains(obstacle, (struct point*)&robots[0].position)
+                || rect_contains(obstacle, (struct point*)&robots[1].position)
             ) {
                 pami_stuck[i] = true;
             }

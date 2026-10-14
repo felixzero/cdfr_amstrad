@@ -12,14 +12,20 @@
 #define ORIENTATION_WEST                2
 #define ORIENTATION_NORTH               3
 
-#define TABLE_EDGE_U                    90
-#define TABLE_EDGE_V                    58
+#define TABLE_EDGE_U                    96
+#define TABLE_EDGE_V                    64
 
 #define ROBOT_STARTING_POSITION_V       30
-#define ROBOT_HITBOX                    8
+#define ROBOT_HALF_WIDTH                3
 #define ROTATION_TIMER_MASK             0x0F
 #define MINING_TIMER_OUT                4
-#define ROBOT_MINING_DISTANCE           4
+#define ROBOT_MINING_DISTANCE           6
+
+#define BLOCK_WIDTH                     3
+#define BLOCK_LENGTH                    6
+#define TOWER_WIDTH                     4
+#define GRAIL_WIDTH                     5
+#define PAMI_WIDTH                      5
 
 #define NUMBER_OF_QUARRIES              10
 #define NUMBER_OF_WALLS                 10
@@ -70,7 +76,7 @@
 
 
 struct robot_model {
-    struct point position;
+    struct rect position;
     uint8_t orientation;
     uint8_t carried_stones;
     bool carry_grail;

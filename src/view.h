@@ -1,27 +1,29 @@
 #pragma once
 
-#define POSITION_X_ORIGIN               58
-#define POSITION_Y_ORIGIN               8
+#define POSITION_X_ORIGIN              64
+#define POSITION_Y_ORIGIN              22
 
-#define QUARRY_DISPLAY_OFFSET_U         8
-#define QUARRY_DISPLAY_OFFSET_V         7
-#define QUARRY_Z_INDEX_OFFSET           3
+// Position of the north-west corner on the bottom horizontal plane of the object
+// As displayed in (X, Y) coordinate in the sprite
+#define EAST_BLOCK_OFFSET_X             6
+#define EAST_BLOCK_OFFSET_Y             12
+#define SOUTH_BLOCK_OFFSET_X            6
+#define SOUTH_BLOCK_OFFSET_Y            11
+#define BALL_OFFSET_X                   2
+#define BALL_OFFSET_Y                   2
+#define GRAIL_OFFSET_X                  2
+#define GRAIL_OFFSET_Y                  10
+#define PAMI_OFFSET_X                   2
+#define PAMI_OFFSET_Y                   6
+#define ROBOT_OFFSET_X                  6
+#define ROBOT_OFFSET_Y                  15
+#define TOWER_OFFSET_X                  2
+#define TOWER_OFFSET_Y                  12
 
-#define WALL_DISPLAY_OFFSET_U           8
-#define WALL_DISPLAY_OFFSET_V           7
-#define WALL_Z_INDEX_OFFSET             8
+#define GRAIL_DISPLAY_OFFSET_X          0
+#define GRAIL_DISPLAY_OFFSET_Y          4
+#define GRAIL_DISPLAY_OFFSET_Y_STONE    2
 
-#define TOWER_DISPLAY_OFFSET_U          6
-#define TOWER_DISPLAY_OFFSET_V          3
-
-#define GRAIL_DISPLAY_OFFSET_U          8
-#define GRAIL_DISPLAY_OFFSET_V          5
-#define GRAIL_Z_INDEX_OFFSET            8
-#define GRAIL_DISPLAY_OFFSET_Y_STONE    1
-
-#define PAMI_DISPLAY_OFFSET_U           8
-#define PAMI_DISPLAY_OFFSET_V           5
-#define PAMI_Z_INDEX_OFFSET             8
 
 #include "sprites.h"
 #include "model.h"
