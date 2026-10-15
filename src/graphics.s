@@ -1,3 +1,5 @@
+.module graphics
+
 .globl _wait_for_vsync
 .globl _swap_buffers
 .globl _set_double_buffering
@@ -5,7 +7,7 @@
 .globl _blit_sprite_xor
 .globl _blit_sprite_swap
 .globl _get_current_buffer
-.globl interrupt_service_routine
+.globl vsync_counter
 
 .area _CODE
 
@@ -255,10 +257,10 @@ loop_columns$1:
     ld a, (de)
     or a
     jr Z, skip_trans$
-    push af
+    ex af, af'
     ld a, (hl)
     ld (de), a
-    pop af
+    ex af, af'
     ld (hl), a
 skip_trans$:
     inc hl
@@ -302,30 +304,5 @@ ret$:
     ret
 
 
-interrupt_service_routine:
-    ; Backup registers
-    ex af, af'
-    exx
-
-    ; Check if we are in VSync
-    ld b, #VSYNC_IN
-    in a, (c)
-    rra
-    jr NC, reti$
-
-    ; Increase counter
-    ld hl, #vsync_counter
-    inc (hl)
-
-    ; Restore registers and return
-reti$:
-    exx
-    ex af', af
-    ei
-    reti
-
-
 current_buffer:
     .db BUFFER_C000
-vsync_counter:
-    .db 0

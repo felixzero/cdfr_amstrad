@@ -22,6 +22,7 @@ EMULATOR=/opt/AceDL/AceDL
 
 ASM_OBJS= \
 	build/crt0.s.rel \
+	build/interrupt.s.rel \
 	build/sprite_assets.s.rel \
 	build/sprites.s.rel \
 	build/graphics.s.rel \
@@ -29,7 +30,10 @@ ASM_OBJS= \
 	build/rect.s.rel \
 	build/font.s.rel \
 	build/music/akm_player.s.rel \
-	build/music/title_screen.s.rel
+	build/music/title_screen.s.rel \
+	build/music/main_music.s.rel \
+	build/music/sound_effects.s.rel \
+	build/audio.s.rel
 
 C_OBJS= \
 	build/main.c.rel \
@@ -38,8 +42,7 @@ C_OBJS= \
 	build/controller.c.rel \
 	build/ui.c.rel \
 	build/print.c.rel \
-	build/score.c.rel \
-	build/audio.c.rel
+	build/score.c.rel
 
 BACKGROUND_OBJ=build/background.scr
 
@@ -142,7 +145,7 @@ playdisk: dist/$(PGM_NAME).dsk
 
 clean:
 	@rm build/*
-	@mkdir build/music
+	@rm build/music/*
 
 mrproper: clean
 	@rm dist/*

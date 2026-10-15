@@ -61,7 +61,7 @@ __endasm;
 
     init_controller();
     if (debug_mode) {
-        game_state = GAME_STATE_PLAY;
+        game_state = GAME_STATE_321;
     }
 
     while (1) {
@@ -127,6 +127,5 @@ void display_title_screen(void)
             stop_audio_player();
             return;
         }
-        play_audio_player();
     }
 }

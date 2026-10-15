@@ -1,35 +1,236 @@
 .globl PLY_AKM_INIT
 .globl PLY_AKM_PLAY
 .globl PLY_AKM_STOP
+.globl PLY_AKM_INITSOUNDEFFECTS
+.globl PLY_AKM_PLAYSOUNDEFFECT
 
 .area _MUSIC_ASSETS
 
 PLY_AKM_OFFSET1B = .+1
-PLY_AKM_DATA_OFFSETPTSTARTTRACK = .+1
+PLY_AKM_DATA_OFFSETTRANSPOSITION = .+1
 PLY_AKM_REGISTERS_OFFSETVOLUME = .+1
+PLY_AKM_SOUNDEFFECTDATA_OFFSETINVERTEDVOLUME = .+2
 PLY_AKM_OFFSET2B = .+2
+PLY_AKM_DATA_OFFSETPTSTARTTRACK = .+2
 PLY_AKM_START:
 PLY_AKM_DATA_OFFSETWAITEMPTYCELL: jp PLY_AKM_INIT
-PLY_AKM_DATA_OFFSETBASENOTE = .+2
+PLY_AKM_SOUNDEFFECTDATA_OFFSETSPEED = .+1
+PLY_AKM_DATA_OFFSETPTTRACK = .+1
 PLY_AKM_REGISTERS_OFFSETSOFTWAREPERIODLSB = .+2
 RASM_VERSION:
-PLY_AKM_DATA_OFFSETPTTRACK: jp PLY_AKM_PLAY
-PLY_AKM_DATA_OFFSETESCAPEINSTRUMENT = .+1
-PLY_AKM_DATA_OFFSETESCAPEWAIT = .+2
-PLY_AKM_DATA_OFFSETSECONDARYINSTRUMENT = .+2
-PLY_AKM_DATA_OFFSETESCAPENOTE: jp PLY_AKM_INITVARS_END
-PLY_AKM_DATA_OFFSETINSTRUMENTCURRENTSTEP = .+2
+PLY_AKM_SOUNDEFFECTDATA_OFFSETCURRENTSTEP: jp PLY_AKM_PLAY
+PLY_AKM_DATA_OFFSETESCAPENOTE = .+1
+PLY_AKM_CHANNEL_SOUNDEFFECTDATASIZE = .+2
+PLY_AKM_DATA_OFFSETESCAPEINSTRUMENT = .+2
+PLY_AKM_DATA_OFFSETBASENOTE: jp PLY_AKM_INITVARS_END
+PLY_AKM_DATA_OFFSETPTINSTRUMENT = .+1
+_PLY_AKM_INITSOUNDEFFECTS::
+PLY_AKM_INITSOUNDEFFECTS:
+PLY_AKM_DATA_OFFSETESCAPEWAIT:
+PLY_AKM_DATA_OFFSETSECONDARYINSTRUMENT:
+PLY_AKM_REGISTERS_OFFSETSOFTWAREPERIODMSB: ld (PLY_AKM_DATA_OFFSETISPITCHUPDOWNUSED),hl
+PLY_AKM_DATA_OFFSETINSTRUMENTCURRENTSTEP: ret 
+_PLY_AKM_PLAYSOUNDEFFECT::
+PLY_AKM_PLAYSOUNDEFFECT:
+PLY_AKM_DATA_OFFSETINSTRUMENTSPEED: dec a
+PLY_AKM_DATA_OFFSETISPITCHUPDOWNUSED = .+1
+PLY_AKM_DATA_OFFSETTRACKPITCHINTEGER = .+2
+PLY_AKM_PTSOUNDEFFECTTABLE:
+PLY_AKM_DATA_OFFSETTRACKINVERTEDVOLUME: ld hl,#0
+    ld e,a
+PLY_AKM_DATA_OFFSETTRACKPITCHSPEED = .+1
+PLY_AKM_DATA_OFFSETTRACKPITCHDECIMAL: ld d,#0
+    add hl,de
+PLY_AKM_DATA_OFFSETISARPEGGIOTABLEUSED: add hl,de
+PLY_AKM_DATA_OFFSETPTARPEGGIOTABLE: ld e,(hl)
+    inc hl
+PLY_AKM_DATA_OFFSETPTARPEGGIOOFFSET: ld d,(hl)
+PLY_AKM_DATA_OFFSETARPEGGIOCURRENTSTEP: ld a,(de)
+PLY_AKM_DATA_OFFSETARPEGGIOCURRENTSPEED: inc de
+PLY_AKM_DATA_OFFSETARPEGGIOORIGINALSPEED: ex af,af'
+PLY_AKM_DATA_OFFSETCURRENTARPEGGIOVALUE: ld a,b
+PLY_AKM_DATA_OFFSETPTPITCHTABLE = .+1
+PLY_AKM_DATA_OFFSETISPITCHTABLEUSED: ld hl,#PLY_AKM_CHANNEL1_SOUNDEFFECTDATA
+PLY_AKM_DATA_OFFSETPITCHCURRENTSTEP = .+1
+PLY_AKM_DATA_OFFSETPTPITCHOFFSET: ld b,#0
+PLY_AKM_DATA_OFFSETPITCHORIGINALSPEED = .+1
+PLY_AKM_DATA_OFFSETPITCHCURRENTSPEED: sla c
+PLY_AKM_DATA_OFFSETCURRENTPITCHTABLEVALUE: sla c
+PLY_AKM_TRACK1_DATA_SIZE: sla c
+    add hl,bc
+    ld (hl),e
+    inc hl
+    ld (hl),d
+    inc hl
+    ld (hl),a
+    inc hl
+    ld (hl),#0
+    inc hl
+    ex af,af'
+    ld (hl),a
+    ret 
+_PLY_AKM_STOPSOUNDEFFECTFROMCHANNEL::
+PLY_AKM_STOPSOUNDEFFECTFROMCHANNEL: add a,a
+    add a,a
+    add a,a
+    ld e,a
+    ld d,#0
+    ld hl,#PLY_AKM_CHANNEL1_SOUNDEFFECTDATA
+    add hl,de
+    ld (hl),d
+    inc hl
+    ld (hl),d
+    ret 
+PLY_AKM_PLAYSOUNDEFFECTSSTREAM: rla 
+    rla 
+    ld ix,#PLY_AKM_CHANNEL1_SOUNDEFFECTDATA
+    ld iy,#PLY_AKM_TRACK3_DATA_END
+    ld c,a
+    call PLY_AKM_PSES_PLAY
+    ld ix,#PLY_AKM_CHANNEL2_SOUNDEFFECTDATA
+    ld iy,#PLY_AKM_TRACK2_REGISTERS
+    srl c
+    call PLY_AKM_PSES_PLAY
+    ld ix,#PLY_AKM_CHANNEL3_SOUNDEFFECTDATA
+    ld iy,#PLY_AKM_TRACK3_REGISTERS
+    rr c
+    call PLY_AKM_PSES_PLAY
+    ld a,c
+    ld (PLY_AKM_MIXERREGISTER),a
+    ret 
+PLY_AKM_PSES_PLAY: ld l,+0(ix)
+    ld h,+1(ix)
+    ld a,l
+    or h
+    ret z
+PLY_AKM_PSES_READFIRSTBYTE: ld a,(hl)
+    inc hl
+    ld b,a
+    rra 
+    jr c,PLY_AKM_PSES_SOFTWAREORSOFTWAREANDHARDWARE
+    rra 
+    jr c,PLY_AKM_PSES_HARDWAREONLY
+    rra 
+    jr c,PLY_AKM_PSES_S_ENDORLOOP
+    call PLY_AKM_PSES_MANAGEVOLUMEFROMA_FILTER4BITS
+    rl b
+    call PLY_AKM_PSES_READNOISEIFNEEDEDANDOPENORCLOSENOISECHANNEL
+    set 2,c
+    jr PLY_AKM_PSES_SAVEPOINTERANDEXIT
+PLY_AKM_PSES_S_ENDORLOOP: rra 
+    jr c,PLY_AKM_PSES_S_LOOP
+    xor a
+    ld +0(ix),a
+    ld +1(ix),a
+    ret 
+PLY_AKM_PSES_S_LOOP: ld a,(hl)
+    inc hl
+    ld h,(hl)
+    ld l,a
+    jr PLY_AKM_PSES_READFIRSTBYTE
+PLY_AKM_PSES_SAVEPOINTERANDEXIT: ld a,+3(ix)
+    cp +4(ix)
+    jr c,PLY_AKM_PSES_NOTREACHED
+    ld +3(ix),#0
+    .db 221
+    .db 117
+    .db 0
+    .db 221
+    .db 116
+    .db 1
+    ret 
+PLY_AKM_PSES_NOTREACHED: inc +3(ix)
+    ret 
+PLY_AKM_PSES_HARDWAREONLY: call PLY_AKM_PSES_SHARED_READRETRIGHARDWAREENVPERIODNOISE
+    set 2,c
+    jr PLY_AKM_PSES_SAVEPOINTERANDEXIT
+PLY_AKM_PSES_SOFTWAREORSOFTWAREANDHARDWARE: rra 
+    jr c,PLY_AKM_PSES_SOFTWAREANDHARDWARE
+    call PLY_AKM_PSES_MANAGEVOLUMEFROMA_FILTER4BITS
+    rl b
+    call PLY_AKM_PSES_READNOISEIFNEEDEDANDOPENORCLOSENOISECHANNEL
+    res 2,c
+    call PLY_AKM_PSES_READSOFTWAREPERIOD
+    jr PLY_AKM_PSES_SAVEPOINTERANDEXIT
+PLY_AKM_PSES_SOFTWAREANDHARDWARE: call PLY_AKM_PSES_SHARED_READRETRIGHARDWAREENVPERIODNOISE
+    call PLY_AKM_PSES_READSOFTWAREPERIOD
+    res 2,c
+    jr PLY_AKM_PSES_SAVEPOINTERANDEXIT
+PLY_AKM_PSES_SHARED_READRETRIGHARDWAREENVPERIODNOISE: rra 
+    jr nc,PLY_AKM_PSES_H_AFTERRETRIG
+    ld d,a
+    ld a,#255
+    ld (PLY_AKM_SETREG13OLD+1),a
+    ld a,d
+PLY_AKM_PSES_H_AFTERRETRIG: and #7
+    add a,#8
+    ld (PLY_AKM_SENDPSGREGISTERR13+1),a
+    rl b
+    call PLY_AKM_PSES_READNOISEIFNEEDEDANDOPENORCLOSENOISECHANNEL
+    call PLY_AKM_PSES_READHARDWAREPERIOD
+    ld a,#16
+    jp PLY_AKM_PSES_MANAGEVOLUMEFROMA_HARD
+PLY_AKM_PSES_READNOISEIFNEEDEDANDOPENORCLOSENOISECHANNEL: jr c,PLY_AKM_PSES_READNOISEANDOPENNOISECHANNEL_OPENNOISE
+    set 5,c
+    ret 
+PLY_AKM_PSES_READNOISEANDOPENNOISECHANNEL_OPENNOISE: ld a,(hl)
+SYNCHRO: ld (PLY_AKM_NOISEREGISTER),a
+    inc hl
+    res 5,c
+    ret 
+PLY_AKM_PSES_READHARDWAREPERIOD: ld a,(hl)
+    ld (PLY_AKM_REG11),a
+    inc hl
+    ld a,(hl)
+    ld (PLY_AKM_REG12),a
+    inc hl
+    ret 
+PLY_AKM_PSES_READSOFTWAREPERIOD: ld a,(hl)
+    ld +5(iy),a
+    inc hl
+    ld a,(hl)
+    ld +9(iy),a
+    inc hl
+    ret 
+PLY_AKM_PSES_MANAGEVOLUMEFROMA_FILTER4BITS: and #15
+PLY_AKM_PSES_MANAGEVOLUMEFROMA_HARD: sub +2(ix)
+    jr nc,PLY_AKM_PSES_MVFA_NOOVERFLOW
+    xor a
+PLY_AKM_PSES_MVFA_NOOVERFLOW: ld +1(iy),a
+    ret 
+PLY_AKM_CHANNEL1_SOUNDEFFECTDATA: .dw 0
+PLY_AKM_CHANNEL1_SOUNDEFFECTINVERTEDVOLUME: .db 0
+PLY_AKM_CHANNEL1_SOUNDEFFECTCURRENTSTEP: .db 0
+PLY_AKM_CHANNEL1_SOUNDEFFECTSPEED: .db 0
+    .db 0
+    .db 0
+    .db 0
+PLY_AKM_CHANNEL2_SOUNDEFFECTDATA: .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+PLY_AKM_CHANNEL3_SOUNDEFFECTDATA: .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
 _PLY_AKM_INIT::
-PLY_AKM_INIT:
-PLY_AKM_DATA_OFFSETPTINSTRUMENT:
-PLY_AKM_REGISTERS_OFFSETSOFTWAREPERIODMSB: ld de,#PLY_AKM_READLINE+1
-PLY_AKM_DATA_OFFSETTRACKINVERTEDVOLUME = .+1
-PLY_AKM_DATA_OFFSETINSTRUMENTSPEED: ldi
-PLY_AKM_TRACK1_DATA_SIZE: ldi
-    inc hl
-    inc hl
-    inc hl
-    inc hl
+PLY_AKM_INIT: ld de,#PLY_AKM_READLINE+1
+    ldi
+    ldi
+    ld de,#PLY_AKM_PTARPEGGIOS+1
+    ldi
+    ldi
+    ld de,#PLY_AKM_PTPITCHES+1
+    ldi
+    ldi
     add a,a
     ld e,a
     ld d,#0
@@ -54,8 +255,8 @@ PLY_AKM_INITVARS_LOOP: ld e,+0(ix)
     inc hl
     ld (hl),d
     ld hl,#PLY_AKM_TRACK1_DATA
-    ld de,#PLY_AKM_TRACK1_PTSTARTTRACK
-    ld bc,#41
+    ld de,#PLY_AKM_TRACK1_TRANSPOSITION
+    ld bc,#113
     ld (hl),a
     ldir
     ld (PLY_AKM_RT_READEFFECTSFLAG+1),a
@@ -70,6 +271,10 @@ PLY_AKM_INITVARS_LOOP: ld e,+0(ix)
     ld (PLY_AKM_TRACK1_PTINSTRUMENT),de
     ld (PLY_AKM_TRACK2_PTINSTRUMENT),de
     ld (PLY_AKM_TRACK3_PTINSTRUMENT),de
+    ld hl,#0
+    ld (PLY_AKM_CHANNEL1_SOUNDEFFECTDATA),hl
+    ld (PLY_AKM_CHANNEL2_SOUNDEFFECTDATA),hl
+    ld (PLY_AKM_CHANNEL3_SOUNDEFFECTDATA),hl
     ret 
 PLY_AKM_INITVARS_START: .dw PLY_AKM_NOTEINDEXTABLE+1
     .dw PLY_AKM_NOTEINDEXTABLE+2
@@ -131,11 +336,14 @@ PLY_AKM_DEFAULTSTARTWAITINTRACKS: ld a,#0
     jr nc,PLY_AKM_LINKERAFTERSPEEDCHANGE
     ld a,(hl)
     inc hl
+    or a
+    jr nz,PLY_AKM_LINKERSPEEDCHANGE
     ld a,(hl)
     inc hl
     ld h,(hl)
     ld l,a
     jr PLY_AKM_LINKERPOSTPT
+PLY_AKM_LINKERSPEEDCHANGE: ld (PLY_AKM_SPEED+1),a
 PLY_AKM_LINKERAFTERSPEEDCHANGE: rr b
     jr nc,PLY_AKM_LINKERUSEPREVIOUSHEIGHT
     ld a,(hl)
@@ -145,7 +353,6 @@ PLY_AKM_LINKERAFTERSPEEDCHANGE: rr b
 PLY_AKM_LINKERUSEPREVIOUSHEIGHT:
 PLY_AKM_LINKERPREVIOUSREMAININGHEIGHT: ld a,#0
 PLY_AKM_LINKERSETREMAININGHEIGHT: ld (PLY_AKM_PATTERNREMAININGHEIGHT+1),a
-SYNCHRO = .+3
     ld ix,#PLY_AKM_TRACK1_DATA
     call PLY_AKM_CHECKTRANSPOSITIONANDTRACK
     ld ix,#PLY_AKM_TRACK1_DATA_END
@@ -183,7 +390,7 @@ PLY_AKM_TICKCOUNTERMANAGED: ld (PLY_AKM_TICKCOUNTER+1),a
     ld iy,#PLY_AKM_TRACK3_REGISTERS
     call PLY_AKM_PLAYSOUNDSTREAM
     ld a,c
-    ld (PLY_AKM_MIXERREGISTER),a
+    call PLY_AKM_PLAYSOUNDEFFECTSSTREAM
 PLY_AKM_SENDPSG: ld sp,#PLY_AKM_TRACK3_DATA_END
     ld bc,#63104
     ld a,#192
@@ -201,11 +408,24 @@ PLY_AKM_SENDPSGREGISTERAFTERPOP: ld b,d
     out (c),c
     out (c),a
     ret 
+PLY_AKM_SENDPSGREGISTERR13:
+PLY_AKM_SETREG13: ld a,#0
+PLY_AKM_SETREG13OLD: cp #0
+    jr z,PLY_AKM_SENDPSGREGISTEREND
+    ld (PLY_AKM_SETREG13OLD+1),a
+    ld h,a
+    ld l,#13
+    ld a,#192
+    ret 
 PLY_AKM_SENDPSGREGISTEREND:
 PLY_AKM_SAVESP: ld sp,#0
     ret 
 PLY_AKM_CHECKTRANSPOSITIONANDTRACK: rr b
-    rr b
+    jr nc,PLY_AKM_CHECKTRANSPOSITIONANDTRACK_AFTERTRANSPOSITION
+    ld a,(hl)
+    ld +1(ix),a
+    inc hl
+PLY_AKM_CHECKTRANSPOSITIONANDTRACK_AFTERTRANSPOSITION: rr b
     jr nc,PLY_AKM_CHECKTRANSPOSITIONANDTRACK_NONEWTRACK
     ld a,(hl)
     inc hl
@@ -216,12 +436,12 @@ PLY_AKM_CHECKTRANSPOSITIONANDTRACK: rr b
     ld h,#0
     add hl,de
     ld a,(hl)
-    ld +1(ix),a
-    ld +3(ix),a
-    inc hl
-    ld a,(hl)
     ld +2(ix),a
     ld +4(ix),a
+    inc hl
+    ld a,(hl)
+    ld +3(ix),a
+    ld +5(ix),a
     exx
     ret 
 PLY_AKM_CHECKTRANSPOSITIONANDTRACK_TRACKOFFSET: rra 
@@ -233,31 +453,31 @@ PLY_AKM_CHECKTRANSPOSITIONANDTRACK_TRACKOFFSET: rra
     add hl,de
     .db 221
     .db 117
-    .db 1
-    .db 221
-    .db 116
     .db 2
     .db 221
-    .db 117
+    .db 116
     .db 3
     .db 221
-    .db 116
+    .db 117
     .db 4
+    .db 221
+    .db 116
+    .db 5
     ld l,c
     ld h,a
     ret 
-PLY_AKM_CHECKTRANSPOSITIONANDTRACK_NONEWTRACK: ld a,+1(ix)
-    ld +3(ix),a
-    ld a,+2(ix)
+PLY_AKM_CHECKTRANSPOSITIONANDTRACK_NONEWTRACK: ld a,+2(ix)
     ld +4(ix),a
+    ld a,+3(ix)
+    ld +5(ix),a
     ret 
 PLY_AKM_READTRACK: ld a,+0(ix)
     sub #1
     jr c,PLY_AKM_RT_NOEMPTYCELL
     ld +0(ix),a
     ret 
-PLY_AKM_RT_NOEMPTYCELL: ld l,+3(ix)
-    ld h,+4(ix)
+PLY_AKM_RT_NOEMPTYCELL: ld l,+4(ix)
+    ld h,+5(ix)
 PLY_AKM_RT_GETDATABYTE: ld b,(hl)
     inc hl
     ld a,b
@@ -270,10 +490,10 @@ PLY_AKM_FLAGNOTEANDEFFECTINCELL: cp #12
     jr z,PLY_AKM_RT_NONOTEMAYBEEFFECTS
     dec a
     jr z,PLY_AKM_RT_NEWESCAPENOTE
-    ld a,+6(ix)
+    ld a,+7(ix)
     jr PLY_AKM_RT_AFTERNOTEREAD
 PLY_AKM_RT_NEWESCAPENOTE: ld a,(hl)
-    ld +6(ix),a
+    ld +7(ix),a
     inc hl
     jr PLY_AKM_RT_AFTERNOTEREAD
 PLY_AKM_RT_NOTEANDEFFECTS: dec a
@@ -290,7 +510,8 @@ PLY_AKM_RT_NOTEREFERENCE: exx
     add hl,bc
     ld a,(hl)
     exx
-PLY_AKM_RT_AFTERNOTEREAD: ld +5(ix),a
+PLY_AKM_RT_AFTERNOTEREAD: add a,+1(ix)
+    ld +6(ix),a
     ld a,b
     and #48
     jr z,PLY_AKM_RT_SAMEESCAPEINSTRUMENT
@@ -300,9 +521,9 @@ PLY_AKM_RT_AFTERNOTEREAD: ld +5(ix),a
     jr z,PLY_AKM_RT_SECONDARYINSTRUMENT
     ld a,(hl)
     inc hl
-    ld +7(ix),a
+    ld +8(ix),a
     jr PLY_AKM_RT_STORECURRENTINSTRUMENT
-PLY_AKM_RT_SAMEESCAPEINSTRUMENT: ld a,+7(ix)
+PLY_AKM_RT_SAMEESCAPEINSTRUMENT: ld a,+8(ix)
     jr PLY_AKM_RT_STORECURRENTINSTRUMENT
 PLY_AKM_RT_SECONDARYINSTRUMENT:
 PLY_AKM_SECONDARYINSTRUMENT: ld a,#0
@@ -320,16 +541,27 @@ PLY_AKM_RT_STORECURRENTINSTRUMENT: exx
     ld l,a
     ld a,(hl)
     inc hl
-    ld +12(ix),a
+    ld +13(ix),a
     .db 221
     .db 117
-    .db 9
+    .db 10
     .db 221
     .db 116
-    .db 10
+    .db 11
     exx
     xor a
-    ld +11(ix),a
+    ld +12(ix),a
+    ld +15(ix),a
+    ld +16(ix),a
+    ld +17(ix),a
+    ld +24(ix),a
+    ld +25(ix),a
+    ld a,+27(ix)
+    ld +26(ix),a
+    ld +32(ix),a
+    ld +33(ix),a
+    ld a,+35(ix)
+    ld +34(ix),a
 PLY_AKM_RT_READWAITFLAGS: ld a,b
     and #192
     jr z,PLY_AKM_RT_SAMEESCAPEWAIT
@@ -339,9 +571,9 @@ PLY_AKM_RT_READWAITFLAGS: ld a,b
     jr z,PLY_AKM_RT_SECONDARYWAIT
     ld a,(hl)
     inc hl
-    ld +8(ix),a
+    ld +9(ix),a
     jr PLY_AKM_RT_STORECURRENTWAIT
-PLY_AKM_RT_SAMEESCAPEWAIT: ld a,+8(ix)
+PLY_AKM_RT_SAMEESCAPEWAIT: ld a,+9(ix)
     jr PLY_AKM_RT_STORECURRENTWAIT
 PLY_AKM_RT_PRIMARYWAIT:
 PLY_AKM_PRIMARYWAIT: ld a,#0
@@ -354,10 +586,10 @@ PLY_AKM_RT_READEFFECTSFLAG: ld a,#0
     jr nz,PLY_AKM_RT_READEFFECTS
 PLY_AKM_RT_AFTEREFFECTS: .db 221
     .db 117
-    .db 3
+    .db 4
     .db 221
     .db 116
-    .db 4
+    .db 5
     ret 
 PLY_AKM_RT_READEFFECTS: xor a
     ld (PLY_AKM_RT_READEFFECTSFLAG+1),a
@@ -390,20 +622,100 @@ PLY_AKM_RT_WAITSHORT: ld a,b
     ld +0(ix),a
 PLY_AKM_RT_CELLREAD: .db 221
     .db 117
-    .db 3
+    .db 4
     .db 221
     .db 116
-    .db 4
+    .db 5
     ret 
-PLY_AKM_MANAGEEFFECTS: ret 
-PLY_AKM_PLAYSOUNDSTREAM: ld l,+9(ix)
-    ld h,+10(ix)
+PLY_AKM_MANAGEEFFECTS: ld a,+15(ix)
+    or a
+    jr z,PLY_AKM_ME_PITCHUPDOWNFINISHED
+    ld l,+18(ix)
+    ld h,+16(ix)
+    ld e,+19(ix)
+    ld d,+20(ix)
+    ld a,+17(ix)
+    bit 7,d
+    jr nz,PLY_AKM_ME_PITCHUPDOWN_NEGATIVESPEED
+PLY_AKM_ME_PITCHUPDOWN_POSITIVESPEED: add hl,de
+    adc a,#0
+    jr PLY_AKM_ME_PITCHUPDOWN_SAVE
+PLY_AKM_ME_PITCHUPDOWN_NEGATIVESPEED: res 7,d
+    or a
+    sbc hl,de
+    sbc a,#0
+PLY_AKM_ME_PITCHUPDOWN_SAVE: ld +17(ix),a
+    .db 221
+    .db 117
+    .db 18
+    .db 221
+    .db 116
+    .db 16
+PLY_AKM_ME_PITCHUPDOWNFINISHED: ld a,+21(ix)
+    or a
+    jr z,PLY_AKM_ME_ARPEGGIOTABLEFINISHED
+    ld e,+22(ix)
+    ld d,+23(ix)
+    ld l,+24(ix)
+    ld h,#0
+    add hl,de
+    ld a,(hl)
+    sra a
+    ld +28(ix),a
+    ld a,+25(ix)
+    cp +26(ix)
+    jr c,PLY_AKM_ME_ARPEGGIOTABLE_SPEEDNOTREACHED
+    ld +25(ix),#0
+    inc +24(ix)
+    inc hl
+    ld a,(hl)
+    rra 
+    jr nc,PLY_AKM_ME_ARPEGGIOTABLEFINISHED
+    ld l,a
+    ld +24(ix),a
+    jr PLY_AKM_ME_ARPEGGIOTABLEFINISHED
+PLY_AKM_ME_ARPEGGIOTABLE_SPEEDNOTREACHED: inc a
+    ld +25(ix),a
+PLY_AKM_ME_ARPEGGIOTABLEFINISHED: ld a,+29(ix)
+    or a
+    ret z
+    ld l,+30(ix)
+    ld h,+31(ix)
+    ld e,+32(ix)
+    ld d,#0
+    add hl,de
+    ld a,(hl)
+    sra a
+    jp p,PLY_AKM_ME_PITCHTABLEENDNOTREACHED_POSITIVE
+    dec d
+PLY_AKM_ME_PITCHTABLEENDNOTREACHED_POSITIVE: ld +36(ix),a
+    .db 221
+    .db 114
+    .db 37
+    ld a,+33(ix)
+    cp +34(ix)
+    jr c,PLY_AKM_ME_PITCHTABLE_SPEEDNOTREACHED
+    ld +33(ix),#0
+    inc +32(ix)
+    inc hl
+    ld a,(hl)
+    rra 
+    ret nc
+    ld l,a
+    ld +32(ix),a
+    ret 
+PLY_AKM_ME_PITCHTABLE_SPEEDNOTREACHED: inc a
+    ld +33(ix),a
+    ret 
+PLY_AKM_PLAYSOUNDSTREAM: ld l,+10(ix)
+    ld h,+11(ix)
 PLY_AKM_PSS_READFIRSTBYTE: ld a,(hl)
     ld b,a
     inc hl
     rra 
     jr c,PLY_AKM_PSS_SOFTORSOFTANDHARD
     rra 
+    jr c,PLY_AKM_PSS_SOFTWARETOHARDWARE
     rra 
     jr nc,PLY_AKM_PSS_NSNH_NOTENDOFSOUND
     ld a,(hl)
@@ -412,10 +724,10 @@ PLY_AKM_PSS_READFIRSTBYTE: ld a,(hl)
     ld l,a
     .db 221
     .db 117
-    .db 9
+    .db 10
     .db 221
     .db 116
-    .db 10
+    .db 11
     jr PLY_AKM_PSS_READFIRSTBYTE
 PLY_AKM_PSS_NSNH_NOTENDOFSOUND: set 2,c
     call PLY_AKM_PSS_SHARED_ADJUSTVOLUME
@@ -424,6 +736,7 @@ PLY_AKM_PSS_NSNH_NOTENDOFSOUND: set 2,c
     call c,PLY_AKM_PSS_READNOISE
     jr PLY_AKM_PSS_SHARED_STOREINSTRUMENTPOINTER
 PLY_AKM_PSS_SOFTORSOFTANDHARD: rra 
+    jr c,PLY_AKM_PSS_SOFTANDHARD
     call PLY_AKM_PSS_SHARED_ADJUSTVOLUME
     ld +1(iy),a
     ld d,#0
@@ -433,28 +746,76 @@ PLY_AKM_PSS_SOFTORSOFTANDHARD: rra
     inc hl
     sra a
     ld d,a
+    call c,PLY_AKM_PSS_READNOISE
 PLY_AKM_PSS_S_AFTERARPANDORNOISE: ld a,d
     call PLY_AKM_CALCULATEPERIODFORBASENOTE
     rl b
+    call c,PLY_AKM_READPITCHANDADDTOPERIOD
     exx
     ld +5(iy),l
     ld +9(iy),h
     exx
-PLY_AKM_PSS_SHARED_STOREINSTRUMENTPOINTER: ld a,+11(ix)
-    cp +12(ix)
+PLY_AKM_PSS_SHARED_STOREINSTRUMENTPOINTER: ld a,+12(ix)
+    cp +13(ix)
     jr nc,PLY_AKM_PSS_S_SPEEDREACHED
-    inc +11(ix)
+    inc +12(ix)
     ret 
 PLY_AKM_PSS_S_SPEEDREACHED: .db 221
     .db 117
-    .db 9
+    .db 10
     .db 221
     .db 116
-    .db 10
-    ld +11(ix),#0
+    .db 11
+    ld +12(ix),#0
+    ret 
+PLY_AKM_PSS_SOFTANDHARD: call PLY_AKM_PSS_SHARED_READENVBITPITCHARP_SOFTPERIOD_HARDVOL_HARDENV
+    ld a,(hl)
+    ld (PLY_AKM_REG11),a
+    inc hl
+    ld a,(hl)
+    ld (PLY_AKM_REG12),a
+    inc hl
+    jr PLY_AKM_PSS_SHARED_STOREINSTRUMENTPOINTER
+PLY_AKM_PSS_SOFTWARETOHARDWARE: call PLY_AKM_PSS_SHARED_READENVBITPITCHARP_SOFTPERIOD_HARDVOL_HARDENV
+    ld a,b
+    rlca 
+    rlca 
+    rlca 
+    rlca 
+    and #7
+    exx
+    jr z,PLY_AKM_PSS_STH_RATIOEND
+PLY_AKM_PSS_STH_RATIOLOOP: srl h
+    rr l
+    dec a
+    jr nz,PLY_AKM_PSS_STH_RATIOLOOP
+    jr nc,PLY_AKM_PSS_STH_RATIOEND
+    inc hl
+PLY_AKM_PSS_STH_RATIOEND: ld a,l
+    ld (PLY_AKM_REG11),a
+    ld a,h
+    ld (PLY_AKM_REG12),a
+    exx
+    jr PLY_AKM_PSS_SHARED_STOREINSTRUMENTPOINTER
+PLY_AKM_PSS_SHARED_READENVBITPITCHARP_SOFTPERIOD_HARDVOL_HARDENV: and #2
+    add a,#8
+    ld (PLY_AKM_SENDPSGREGISTERR13+1),a
+    ld +1(iy),#16
+    xor a
+    bit 7,b
+    jr z,PLY_AKM_PSS_SHARED_RENVBAP_AFTERARPEGGIO
+    ld a,(hl)
+    inc hl
+PLY_AKM_PSS_SHARED_RENVBAP_AFTERARPEGGIO: call PLY_AKM_CALCULATEPERIODFORBASENOTE
+    bit 2,b
+    call nz,PLY_AKM_READPITCHANDADDTOPERIOD
+    exx
+    ld +5(iy),l
+    ld +9(iy),h
+    exx
     ret 
 PLY_AKM_PSS_SHARED_ADJUSTVOLUME: and #15
-    sub +13(ix)
+    sub +14(ix)
     ret nc
     xor a
     ret 
@@ -465,7 +826,8 @@ PLY_AKM_PSS_READNOISE: ld a,(hl)
     ret 
 PLY_AKM_CALCULATEPERIODFORBASENOTE: exx
     ld h,#0
-    add a,+5(ix)
+    add a,+6(ix)
+    add a,+28(ix)
     ld bc,#65292
 PLY_AKM_FINDOCTAVE_LOOP: inc b
     sub c
@@ -487,17 +849,129 @@ PLY_AKM_FINDOCTAVE_OCTAVESHIFTLOOP: srl h
     djnz PLY_AKM_FINDOCTAVE_OCTAVESHIFTLOOP
 PLY_AKM_FINDOCTAVE_OCTAVESHIFTLOOP_FINISHED: jr nc,PLY_AKM_FINDOCTAVE_FINISHED
     inc hl
-PLY_AKM_FINDOCTAVE_FINISHED: exx
+PLY_AKM_FINDOCTAVE_FINISHED: ld a,+29(ix)
+    or a
+    jr z,PLY_AKM_CALCULATEPERIODFORBASENOTE_NOPITCHTABLE
+    ld c,+36(ix)
+    ld b,+37(ix)
+    add hl,bc
+PLY_AKM_CALCULATEPERIODFORBASENOTE_NOPITCHTABLE: ld c,+16(ix)
+    ld b,+17(ix)
+    add hl,bc
+    exx
     ret 
-PLY_AKM_EFFECTVOLUME: ld +13(ix),a
+PLY_AKM_READPITCHANDADDTOPERIOD: ld a,(hl)
+    inc hl
+    exx
+    ld c,a
+    exx
+    ld a,(hl)
+    inc hl
+    exx
+    ld b,a
+    add hl,bc
+    exx
+    ret 
+PLY_AKM_EFFECTRESETWITHVOLUME: ld +14(ix),a
+    xor a
+    ld +15(ix),a
+    ld +21(ix),a
+    ld +28(ix),a
+    ld +29(ix),a
     jp PLY_AKM_RT_READEFFECT_RETURN
-PLY_AKM_EFFECTTABLE: jr PLY_AKM_EFFECTTABLE
+PLY_AKM_EFFECTVOLUME: ld +14(ix),a
+    jp PLY_AKM_RT_READEFFECT_RETURN
+PLY_AKM_EFFECTFORCEINSTRUMENTSPEED: call PLY_AKM_EFFECTREADIFESCAPE
+    ld +13(ix),a
+    jp PLY_AKM_RT_READEFFECT_RETURN
+PLY_AKM_EFFECTFORCEPITCHSPEED: call PLY_AKM_EFFECTREADIFESCAPE
+    ld +34(ix),a
+    jp PLY_AKM_RT_READEFFECT_RETURN
+PLY_AKM_EFFECTFORCEARPEGGIOSPEED: call PLY_AKM_EFFECTREADIFESCAPE
+    ld +26(ix),a
+    jp PLY_AKM_RT_READEFFECT_RETURN
+PLY_AKM_EFFECTTABLE: jr PLY_AKM_EFFECTRESETWITHVOLUME
     jr PLY_AKM_EFFECTVOLUME
-    jr PLY_AKM_EFFECTTABLE+4
-    jr PLY_AKM_EFFECTTABLE+6
-    jr PLY_AKM_EFFECTREADIFESCAPE-6
-    jr PLY_AKM_EFFECTREADIFESCAPE-4
-    jr PLY_AKM_EFFECTREADIFESCAPE-2
+    jr PLY_AKM_EFFECTPITCHUPDOWN
+    jr PLY_AKM_EFFECTARPEGGIOTABLE
+    jr PLY_AKM_EFFECTPITCHTABLE
+    jr PLY_AKM_EFFECTFORCEINSTRUMENTSPEED
+    jr PLY_AKM_EFFECTFORCEARPEGGIOSPEED
+    jr PLY_AKM_EFFECTFORCEPITCHSPEED
+PLY_AKM_EFFECTPITCHUPDOWN: rra 
+    jr nc,PLY_AKM_EFFECTPITCHUPDOWN_DEACTIVATED
+    ld +15(ix),#255
+    ld a,(hl)
+    inc hl
+    ld +19(ix),a
+    ld a,(hl)
+    inc hl
+    ld +20(ix),a
+    jp PLY_AKM_RT_READEFFECT_RETURN
+PLY_AKM_EFFECTPITCHUPDOWN_DEACTIVATED: ld +15(ix),#0
+    jp PLY_AKM_RT_READEFFECT_RETURN
+PLY_AKM_EFFECTARPEGGIOTABLE: call PLY_AKM_EFFECTREADIFESCAPE
+    ld +21(ix),a
+    or a
+    jr z,PLY_AKM_EFFECTARPEGGIOTABLE_STOP
+    add a,a
+    exx
+    ld l,a
+    ld h,#0
+PLY_AKM_PTARPEGGIOS: ld bc,#0
+    add hl,bc
+    ld a,(hl)
+    inc hl
+    ld h,(hl)
+    ld l,a
+    ld a,(hl)
+    inc hl
+    ld +27(ix),a
+    ld +26(ix),a
+    .db 221
+    .db 117
+    .db 22
+    .db 221
+    .db 116
+    .db 23
+    ld bc,(PLY_AKM_NOTEINDEXTABLE+1)
+    exx
+    xor a
+    ld +24(ix),a
+    ld +25(ix),a
+    jp PLY_AKM_RT_READEFFECT_RETURN
+PLY_AKM_EFFECTARPEGGIOTABLE_STOP: ld +28(ix),a
+    jp PLY_AKM_RT_READEFFECT_RETURN
+PLY_AKM_EFFECTPITCHTABLE: call PLY_AKM_EFFECTREADIFESCAPE
+    ld +29(ix),a
+    or a
+    jp z,PLY_AKM_RT_READEFFECT_RETURN
+    add a,a
+    exx
+    ld l,a
+    ld h,#0
+PLY_AKM_PTPITCHES: ld bc,#0
+    add hl,bc
+    ld a,(hl)
+    inc hl
+    ld h,(hl)
+    ld l,a
+    ld a,(hl)
+    inc hl
+    ld +35(ix),a
+    ld +34(ix),a
+    .db 221
+    .db 117
+    .db 30
+    .db 221
+    .db 116
+    .db 31
+    ld bc,(PLY_AKM_NOTEINDEXTABLE+1)
+    exx
+    xor a
+    ld +32(ix),a
+    ld +33(ix),a
+    jp PLY_AKM_RT_READEFFECT_RETURN
 PLY_AKM_EFFECTREADIFESCAPE: cp #15
     ret c
     ld a,(hl)
@@ -505,6 +979,7 @@ PLY_AKM_EFFECTREADIFESCAPE: cp #15
     ret 
 PLY_AKM_TRACK1_DATA:
 PLY_AKM_TRACK1_WAITEMPTYCELL: .db 0
+PLY_AKM_TRACK1_TRANSPOSITION: .db 0
 PLY_AKM_TRACK1_PTSTARTTRACK: .dw 0
 PLY_AKM_TRACK1_PTTRACK: .dw 0
 PLY_AKM_TRACK1_BASENOTE: .db 0
@@ -515,9 +990,28 @@ PLY_AKM_TRACK1_PTINSTRUMENT: .dw 0
 PLY_AKM_TRACK1_INSTRUMENTCURRENTSTEP: .db 0
 PLY_AKM_TRACK1_INSTRUMENTSPEED: .db 0
 PLY_AKM_TRACK1_TRACKINVERTEDVOLUME: .db 0
+PLY_AKM_TRACK1_ISPITCHUPDOWNUSED: .db 0
+PLY_AKM_TRACK1_TRACKPITCHINTEGER: .dw 0
+PLY_AKM_TRACK1_TRACKPITCHDECIMAL: .db 0
+PLY_AKM_TRACK1_TRACKPITCHSPEED: .dw 0
+PLY_AKM_TRACK1_ISARPEGGIOTABLEUSED: .db 0
+PLY_AKM_TRACK1_PTARPEGGIOTABLE: .dw 0
+PLY_AKM_TRACK1_PTARPEGGIOOFFSET: .db 0
+PLY_AKM_TRACK1_ARPEGGIOCURRENTSTEP: .db 0
+PLY_AKM_TRACK1_ARPEGGIOCURRENTSPEED: .db 0
+PLY_AKM_TRACK1_ARPEGGIOORIGINALSPEED: .db 0
+PLY_AKM_TRACK1_CURRENTARPEGGIOVALUE: .db 0
+PLY_AKM_TRACK1_ISPITCHTABLEUSED: .db 0
+PLY_AKM_TRACK1_PTPITCHTABLE: .dw 0
+PLY_AKM_TRACK1_PTPITCHOFFSET: .db 0
+PLY_AKM_TRACK1_PITCHCURRENTSTEP: .db 0
+PLY_AKM_TRACK1_PITCHCURRENTSPEED: .db 0
+PLY_AKM_TRACK1_PITCHORIGINALSPEED: .db 0
+PLY_AKM_TRACK1_CURRENTPITCHTABLEVALUE: .dw 0
 PLY_AKM_TRACK1_DATA_END:
 PLY_AKM_TRACK2_DATA:
 PLY_AKM_TRACK2_WAITEMPTYCELL: .db 0
+    .db 0
     .db 0
     .db 0
 PLY_AKM_TRACK2_PTTRACK: .db 0
@@ -531,9 +1025,33 @@ PLY_AKM_TRACK2_PTINSTRUMENT: .db 0
     .db 0
     .db 0
     .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
 PLY_AKM_TRACK2_DATA_END:
 PLY_AKM_TRACK3_DATA:
 PLY_AKM_TRACK3_WAITEMPTYCELL: .db 0
+    .db 0
     .db 0
     .db 0
 PLY_AKM_TRACK3_PTTRACK: .db 0
@@ -543,6 +1061,29 @@ PLY_AKM_TRACK3_ESCAPENOTE: .db 0
 PLY_AKM_TRACK3_ESCAPEINSTRUMENT: .db 0
 PLY_AKM_TRACK3_ESCAPEWAIT: .db 0
 PLY_AKM_TRACK3_PTINSTRUMENT: .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
+    .db 0
     .db 0
     .db 0
     .db 0
@@ -581,6 +1122,14 @@ PLY_AKM_NOISEREGISTER: .db 0
     .dw PLY_AKM_SENDPSGREGISTER
     .db 7
 PLY_AKM_MIXERREGISTER: .db 0
+    .dw PLY_AKM_SENDPSGREGISTER
+    .db 11
+PLY_AKM_REG11: .db 0
+    .dw PLY_AKM_SENDPSGREGISTER
+    .db 12
+PLY_AKM_REG12: .db 0
+    .dw PLY_AKM_SENDPSGREGISTERR13
+    .dw PLY_AKM_SENDPSGREGISTERAFTERPOP
     .dw PLY_AKM_SENDPSGREGISTEREND
 PLY_AKM_PERIODTABLE: .dw 3822
     .dw 3608

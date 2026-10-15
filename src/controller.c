@@ -108,6 +108,7 @@ static void update_controller_321(void)
             clock_digits[1] = 9;
 
             game_state = GAME_STATE_PLAY;
+            init_audio_player(MAIN_MUSIC_START);
         }
         frame_count = 0;
     }
@@ -208,6 +209,7 @@ static void update_controller_play(void)
                         robot->carried_stones++;
                         user_bricks[i] = robot->carried_stones;
                         update_obstacle_sprite(obstacle_id);
+                        play_sound_effect(SOUND_EFFECT_MINE);
                         break;
 
                         case MINING_INTERACTION_BUILD:
@@ -215,6 +217,7 @@ static void update_controller_play(void)
                         robot->carried_stones--;
                         user_bricks[i] = robot->carried_stones;
                         update_obstacle_sprite(obstacle_id);
+                        play_sound_effect(SOUND_EFFECT_BUILD);
                         break;
 
                         case MINING_INTERACTION_PICK:
@@ -227,6 +230,7 @@ static void update_controller_play(void)
                         grail_locations[i] = obstacle_id;
                         robot->carry_grail = false;
                         update_obstacle_sprite(obstacle_id);
+                        play_sound_effect(SOUND_EFFECT_GRAIL);
                         break;
                     }
                 }
@@ -476,6 +480,7 @@ static void update_flying_balls(void)
             if (balls[i].parabolic_index == BALL_PARABOLA_LENGTH) {
                 balls[i].parabolic_index = 0;
                 balls[i].damping_factor++;
+                play_sound_effect(SOUND_EFFECT_BOINK);
             }
 
             // Out of table balls are lost
