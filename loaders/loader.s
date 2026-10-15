@@ -39,7 +39,12 @@ load_file:
     pop hl
     call print_str
 
+    ; Disable user input waiting message
+    ld a, #1
+    call 0xBC6B
+
     ; CAS IN OPEN
+    xor a
     pop hl
     ld de, #0x0100
     call 0xBC77

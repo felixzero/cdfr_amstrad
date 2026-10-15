@@ -389,8 +389,8 @@ uint8_t manage_mining_interaction(uint8_t obstacle_id, uint8_t robot_id)
             )
         ) {
             if (
-                (!rect_contains(&obstacles[obstacle_id], (struct point*)&robots[0].position))
-                && (!rect_contains(&obstacles[obstacle_id], (struct point*)&robots[1].position))
+                (!rect_intersects(&obstacles[obstacle_id], &robots[0].position))
+                && (!rect_intersects(&obstacles[obstacle_id], &robots[1].position))
             ) {
                 return MINING_INTERACTION_BUILD;
             }
@@ -421,8 +421,8 @@ static void move_pamis(uint8_t iteration)
 
             // PAMI stuck by robot
             if (
-                rect_contains(obstacle, (struct point*)&robots[0].position)
-                || rect_contains(obstacle, (struct point*)&robots[1].position)
+                rect_intersects(obstacle, &robots[0].position)
+                || rect_intersects(obstacle, &robots[1].position)
             ) {
                 pami_stuck[i] = true;
             }
@@ -454,6 +454,7 @@ static void launch_ball(uint8_t player_id)
     balls[i].position.x = robots[player_id].position.x;
     balls[i].position.y = robots[player_id].position.y;
     balls[i].orientation = robots[player_id].orientation;
+    displace_with_orientation(&balls[i].position, balls[i].orientation, ROBOT_MINING_DISTANCE);
     balls[i].flags |= BALL_FLAGS_LAUNCHED_MASK;
 
     launched_balls[player_id]++;

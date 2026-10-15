@@ -61,7 +61,8 @@ __endasm;
 
     init_controller();
     if (debug_mode) {
-        game_state = GAME_STATE_321;
+        game_state = GAME_STATE_PLAY;
+        init_audio_player(MAIN_MUSIC_START);
     }
 
     while (1) {

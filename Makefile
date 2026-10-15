@@ -130,9 +130,9 @@ dist/$(PGM_NAME).dsk: build/code.bin $(BACKGROUND_OBJ) build/loader.bas build/lo
 dist/$(PGM_NAME).cdt: build/code.bin $(BACKGROUND_OBJ) build/loader.bas
 	tools/2cdt -s 0 -n build/loader.bas -t 0 -r CDFR.BAS -F 22 $@
 	tools/2cdt -s 0 build/loader.bin -t 0 -r LOADER.BIN -L 0x$(ASM_LOADER_LOC) $@
-	tools/2cdt -s 0 $(BACKGROUND_OBJ) -t 0 -r BACKGND.BIN -L 0x$(BACKGROUND_LOC) $@
-	tools/2cdt -s 0 build/initialized.bin -t 0 -r INIT.BIN -L 0x$(INIT_CODE_LOC) -X 0x$(INIT_CODE_LOC) $@
-	tools/2cdt -s 0 build/code.bin -t 0 -r CODE.BIN -L 0x$(CODE_LOC) $@
+	tools/2cdt -s 0 -m 3 $(BACKGROUND_OBJ) -t 0 -r BACKGND.BIN -L 0x$(BACKGROUND_LOC) $@
+	tools/2cdt -s 0 -m 3 build/initialized.bin -t 0 -r INIT.BIN -L 0x$(INIT_CODE_LOC) -X 0x$(INIT_CODE_LOC) $@
+	tools/2cdt -s 0 -m 3 build/code.bin -t 0 -r CODE.BIN -L 0x$(CODE_LOC) $@
 
 play: build/code.bin $(BACKGROUND_OBJ)
 	$(EMULATOR) -enable_webapi -web_port 6128 &
